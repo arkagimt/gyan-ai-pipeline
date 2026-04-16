@@ -34,21 +34,37 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Minimal Style ─────────────────────────────────────────────────────────────
+# ── Style ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    [data-testid="stSidebar"] { background: #1a1a2e; }
+    [data-testid="stSidebar"] { background: #1a1a2e; min-width: 200px; }
     [data-testid="stSidebar"] * { color: #e0e0e0 !important; }
-    .block-container { padding-top: 1.5rem; }
+    .block-container { padding-top: 1.2rem; padding-left: 2rem; padding-right: 2rem; max-width: 1200px; }
     div[data-testid="metric-container"] {
         background: white;
         border: 1px solid #e8e8e8;
-        border-radius: 12px;
-        padding: 1rem;
+        border-radius: 10px;
+        padding: 0.8rem 1rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
+    div[data-testid="metric-container"] label { font-size: 0.7rem !important; }
+    .stRadio > div { gap: 0.5rem; }
+    h1 { font-size: 1.6rem !important; }
+    h2 { font-size: 1.2rem !important; }
 </style>
 """, unsafe_allow_html=True)
+
+
+# ── Accuracy score helper ─────────────────────────────────────────────────────
+def _norm_score(score) -> float:
+    """
+    Backward-compat: old data stored accuracy as 0.0–1.0 ratio (bug).
+    New data stores as 0–100. Detect and convert old format.
+    """
+    if score is None:
+        return 0.0
+    s = float(score)
+    return round(s * 100, 1) if s <= 1.0 else round(s, 1)
 
 
 # ── Supabase client ───────────────────────────────────────────────────────────
@@ -159,6 +175,10 @@ def page_dashboard():
 
             if score_data:
                 df = pd.DataFrame(score_data)
+                # Normalize old ratio format (0.0–1.0) to percentage (0–100)
+                df["ai_accuracy_score"] = df["ai_accuracy_score"].apply(
+                    lambda s: float(s) * 100 if s is not None and float(s) <= 1.0 else (float(s) if s is not None else 0.0)
+                )
                 fig2 = px.histogram(
                     df,
                     x="ai_accuracy_score",
@@ -256,7 +276,7 @@ def page_triage():
     # ── Item Cards ────────────────────────────────────────────────────────────
     for row in rows:
         raw = row.get("raw_data") or {}
-        accuracy = row.get("ai_accuracy_score") or 0
+        accuracy = _norm_score(row.get("ai_accuracy_score"))
         flags    = row.get("validation_flags") or []
         segment  = row.get("segment", "")
         batch_id = row.get("batch_id", "")
@@ -370,8 +390,8 @@ def _approve_item(db: Client, row: dict, data_type: str):
         ),
         "question_payload":  raw if data_type == "pyq"      else None,
         "data_payload":      raw if data_type == "material"  else None,
-        "probability_score": float(row.get("ai_accuracy_score") or 70),
-        "ai_accuracy_score": row.get("ai_accuracy_score"),
+        "probability_score": _norm_score(row.get("ai_accuracy_score")) or 70.0,
+        "ai_accuracy_score": _norm_score(row.get("ai_accuracy_score")) or 70.0,
         "validation_flags":  row.get("validation_flags") or [],
         "verified_by_human": True,
     }
@@ -512,7 +532,7 @@ def page_prompts():
     db = get_supabase()
 
     try:
-        rows = db.table("agent_prompts").select("*").order("agent_name").execute().data or []
+        rows = db.table("agent_prompts").select("*").order("agent_id").execute().data or []
     except Exception as e:
         st.error(f"Could not load agent prompts: {e}")
         return
@@ -521,15 +541,15 @@ def page_prompts():
         st.warning("No agent prompts found in Supabase. Run `scripts/setup.sql` first.")
         return
 
-    agent_names = [r["agent_name"] for r in rows]
-    selected    = st.selectbox("Select agent", agent_names,
-                               format_func=lambda x: {
-                                   "sarbagya":    "সর্বজ্ঞ (Scout / Extractor)",
-                                   "chitragupta": "চিত্রগুপ্ত (Validator)",
-                                   "sutradhar":   "সূত্রধর (Content Creator)",
-                               }.get(x, x))
+    agent_ids = [r["agent_id"] for r in rows]
+    selected  = st.selectbox("Select agent", agent_ids,
+                             format_func=lambda x: {
+                                 "sarbagya":    "সর্বজ্ঞ — Scout / Extractor",
+                                 "chitragupta": "চিত্রগুপ্ত — Validator",
+                                 "sutradhar":   "সূত্রধর — Content Creator",
+                             }.get(x, x))
 
-    row = next((r for r in rows if r["agent_name"] == selected), None)
+    row = next((r for r in rows if r["agent_id"] == selected), None)
     if not row:
         return
 
@@ -537,9 +557,11 @@ def page_prompts():
     col_meta, col_controls = st.columns([3, 1])
 
     with col_meta:
-        st.markdown(f"**Model:** `{row.get('model','—')}`  |  "
-                    f"**Temperature:** `{row.get('temperature','—')}`  |  "
-                    f"**Max tokens:** `{row.get('max_tokens','—')}`")
+        st.markdown(
+            f"**Role:** {row.get('role','—')}  \n"
+            f"**Temp:** `{row.get('temperature','—')}` &nbsp;|&nbsp; "
+            f"**Max tokens:** `{row.get('max_tokens','—')}`"
+        )
 
     with col_controls:
         edit_mode = st.toggle("✏️ Edit mode")
@@ -560,7 +582,7 @@ def page_prompts():
                     "system_prompt": new_prompt,
                     "temperature":   new_temp,
                     "max_tokens":    new_tokens,
-                }).eq("agent_name", selected).execute()
+                }).eq("agent_id", selected).execute()
                 st.success(f"✅ `{selected}` prompt updated. Next pipeline run will use this.")
                 st.rerun()
             except Exception as e:
