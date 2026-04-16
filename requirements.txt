@@ -1,0 +1,6 @@
+pydantic>=2.7
+groq>=0.9
+supabase>=2.4
+python-dotenv>=1.0
+pdfplumber>=0.11
+requests>=2.31

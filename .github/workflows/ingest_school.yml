@@ -1,0 +1,72 @@
+name: 📚 Ingest — School
+
+on:
+  workflow_dispatch:
+    inputs:
+      board:
+        description: 'Board (WBBSE | CBSE | ICSE | WBCHSE | WBBPE)'
+        required: true
+        default: 'WBBSE'
+        type: choice
+        options: [WBBSE, CBSE, ICSE, WBCHSE, WBBPE]
+      class_num:
+        description: 'Class number (1–12)'
+        required: true
+        default: '10'
+      subject:
+        description: 'Subject (e.g. "Physical Science")'
+        required: true
+        default: 'Physical Science'
+      chapter:
+        description: 'Chapter slug (optional, e.g. "electricity")'
+        required: false
+        default: ''
+      count:
+        description: 'Number of MCQs to generate (1–20)'
+        required: true
+        default: '5'
+      source_url:
+        description: 'Source URL (optional — leave blank for LLM knowledge)'
+        required: false
+        default: ''
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout pipeline repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pipeline — সর্বজ্ঞ → চিত্রগুপ্ত → সূত্রধর
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GROQ_API_KEY:         ${{ secrets.GROQ_API_KEY }}
+          SARVAM_API_KEY:       ${{ secrets.SARVAM_API_KEY }}
+        run: |
+          ARGS="--segment school \
+                --board ${{ github.event.inputs.board }} \
+                --class ${{ github.event.inputs.class_num }} \
+                --subject \"${{ github.event.inputs.subject }}\" \
+                --count ${{ github.event.inputs.count }}"
+
+          if [ -n "${{ github.event.inputs.chapter }}" ]; then
+            ARGS="$ARGS --chapter \"${{ github.event.inputs.chapter }}\""
+          fi
+
+          if [ -n "${{ github.event.inputs.source_url }}" ]; then
+            ARGS="$ARGS --source-url ${{ github.event.inputs.source_url }}"
+          fi
+
+          eval python gyan_pipeline.py $ARGS

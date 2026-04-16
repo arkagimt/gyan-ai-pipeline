@@ -1,0 +1,64 @@
+name: 💻 Ingest — IT Certifications
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: 'Provider (AWS | Microsoft | GoogleCloud | Snowflake | ScrumAgile | Anthropic)'
+        required: true
+        default: 'AWS'
+        type: choice
+        options: [AWS, Microsoft, GoogleCloud, Snowflake, ScrumAgile, Anthropic]
+      exam:
+        description: 'Exam (e.g. "Cloud Practitioner (CLF-C02)")'
+        required: true
+        default: 'Cloud Practitioner (CLF-C02)'
+      topic:
+        description: 'Topic/Domain (e.g. "Security & Compliance")'
+        required: true
+        default: 'Security & Compliance'
+      count:
+        description: 'Number of MCQs to generate (1–20)'
+        required: true
+        default: '6'
+      source_url:
+        description: 'Source URL (optional — AWS/Azure docs link)'
+        required: false
+        default: ''
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout pipeline repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pipeline — সর্বজ্ঞ → চিত্রগুপ্ত → সূত্রধর
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GROQ_API_KEY:         ${{ secrets.GROQ_API_KEY }}
+          SARVAM_API_KEY:       ${{ secrets.SARVAM_API_KEY }}
+        run: |
+          ARGS="--segment it \
+                --provider ${{ github.event.inputs.provider }} \
+                --exam \"${{ github.event.inputs.exam }}\" \
+                --topic \"${{ github.event.inputs.topic }}\" \
+                --count ${{ github.event.inputs.count }}"
+
+          if [ -n "${{ github.event.inputs.source_url }}" ]; then
+            ARGS="$ARGS --source-url ${{ github.event.inputs.source_url }}"
+          fi
+
+          eval python gyan_pipeline.py $ARGS

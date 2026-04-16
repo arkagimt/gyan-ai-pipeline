@@ -1,0 +1,64 @@
+name: 🏛️ Ingest — Competitive Exams
+
+on:
+  workflow_dispatch:
+    inputs:
+      authority:
+        description: 'Authority (WBPSC | WBPRB | WBBPE | WBSSC)'
+        required: true
+        default: 'WBPSC'
+        type: choice
+        options: [WBPSC, WBPRB, WBBPE, WBSSC]
+      exam:
+        description: 'Exam name (e.g. "WBCS Prelims")'
+        required: true
+        default: 'WBCS Prelims'
+      topic:
+        description: 'Topic (e.g. "History of India")'
+        required: true
+        default: 'History of India'
+      count:
+        description: 'Number of MCQs to generate (1–20)'
+        required: true
+        default: '8'
+      source_url:
+        description: 'Source URL (optional)'
+        required: false
+        default: ''
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout pipeline repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pipeline — সর্বজ্ঞ → চিত্রগুপ্ত → সূত্রধর
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GROQ_API_KEY:         ${{ secrets.GROQ_API_KEY }}
+          SARVAM_API_KEY:       ${{ secrets.SARVAM_API_KEY }}
+        run: |
+          ARGS="--segment competitive \
+                --authority ${{ github.event.inputs.authority }} \
+                --exam \"${{ github.event.inputs.exam }}\" \
+                --topic \"${{ github.event.inputs.topic }}\" \
+                --count ${{ github.event.inputs.count }}"
+
+          if [ -n "${{ github.event.inputs.source_url }}" ]; then
+            ARGS="$ARGS --source-url ${{ github.event.inputs.source_url }}"
+          fi
+
+          eval python gyan_pipeline.py $ARGS
