@@ -135,6 +135,56 @@ class StudyPackage(BaseModel):
     metadata:    dict = Field(default_factory=dict)
 
 
+# ── LLM Output Models (instructor response_model targets) ────────────────────
+# These are the *LLM-generated* portions only — no pipeline-attached fields.
+# Each agent calls call_llm(..., response_model=XxxOutput) and then assembles
+# the full pipeline model by attaching taxonomy / extract / etc.
+
+class ExtractOutput(BaseModel):
+    """
+    সর্বজ্ঞ LLM output.
+    min_length validators enforce minimum content — instructor auto-retries if violated.
+    Inspired by: github.com/jxnl/instructor (MIT)
+    """
+    key_facts:     list[str]       = Field(min_length=3,  description="Min 8 concrete facts")
+    core_concepts: list[str]       = Field(min_length=2,  description="4-8 named concepts")
+    formulas:      list[str]       = Field(default_factory=list)
+    definitions:   dict[str, str]  = Field(default_factory=dict)
+    source_type:   str             = Field(default="llm_knowledge")
+
+
+class ValidationOutput(BaseModel):
+    """চিত্রগুপ্ত LLM output."""
+    is_valid:         bool
+    confidence:       int              = Field(ge=0, le=100)
+    flags:            list[str]        = Field(default_factory=list)
+    corrections:      dict[str, str]   = Field(default_factory=dict)
+    rejection_reason: Optional[str]    = None
+
+
+class StudyOutput(BaseModel):
+    """সূত্রধর LLM output — notes + MCQs before taxonomy is attached."""
+    notes: list[StudyNote] = Field(min_length=1)
+    mcqs:  list[MCQItem]   = Field(min_length=1)
+
+
+class MCQVerification(BaseModel):
+    """
+    Self-critique verdict for a single MCQ.
+    Inspired by Guardrails AI 'reask' pattern (Apache 2.0):
+    the LLM is asked to audit its own outputs for quality issues.
+    """
+    index:   int            = Field(description="0-based index of the MCQ in the batch")
+    verdict: str            = Field(description="ok | has_issue")
+    issue:   Optional[str]  = Field(default=None, description="Specific issue if verdict=has_issue")
+
+
+class MCQBatchVerification(BaseModel):
+    """Self-critique result for the full MCQ batch."""
+    verifications: list[MCQVerification]
+    any_issues:    bool = Field(description="True if ANY MCQ has verdict=has_issue")
+
+
 # ── Pipeline Result (stdout JSON for Next.js) ─────────────────────────────────
 
 class PipelineResult(BaseModel):

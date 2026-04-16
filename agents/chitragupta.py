@@ -12,48 +12,26 @@ Validates:
   4. Formula/definition accuracy
   5. Structural completeness (enough data for সূত্রধর to work with)
 
+Upgrade (instructor pattern — github.com/jxnl/instructor, MIT):
+  Previously: raw requests.post() + json.loads() + parsed.get() with null risks.
+  Now: call_llm(response_model=ValidationOutput) — instructor validates the
+  schema and retries. The `corrections: dict` null-bug is gone because
+  ValidationOutput declares it as dict with default_factory=dict.
+
 A ValidationReport with is_valid=False stops the pipeline for this slice.
 চিত্রগুপ্ত also performs lightweight corrections (e.g. fixing typos in
 formula names) rather than outright rejection where possible.
 """
 
 from __future__ import annotations
-import json
-import time
-import requests
-from pydantic import ValidationError
+
+from instructor.exceptions import InstructorRetryException
 
 from config import (
-    GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL,
-    MAX_RETRIES, LLM_TIMEOUT_S,
-    get_agent_prompt, emit_agent, emit_progress,
+    MAX_RETRIES, get_agent_prompt, emit_agent, emit_progress,
 )
-from models.schemas import RawExtract, ValidationReport, ValidationFlag
-
-
-# ── LLM call ─────────────────────────────────────────────────────────────────
-
-def _call_groq(system: str, user: str, temperature: float, max_tokens: int) -> str:
-    resp = requests.post(
-        GROQ_API_URL,
-        headers={
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": GROQ_MODEL,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user",   "content": user},
-            ],
-            "temperature": temperature,
-            "max_tokens":  max_tokens,
-            "response_format": {"type": "json_object"},
-        },
-        timeout=LLM_TIMEOUT_S,
-    )
-    resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"].strip()
+from llm import call_llm
+from models.schemas import RawExtract, ValidationReport, ValidationFlag, ValidationOutput
 
 
 # ── Prompt builder ────────────────────────────────────────────────────────────
@@ -61,42 +39,38 @@ def _call_groq(system: str, user: str, temperature: float, max_tokens: int) -> s
 def _build_user_prompt(extract: RawExtract) -> str:
     taxonomy = extract.taxonomy
     return f"""
-You are validating educational content for the Gyan AI platform.
+INPUT:
+  taxonomy:    {taxonomy.label}
+  segment:     {taxonomy.segment.value}
+  source_type: {extract.source_type}
 
-Taxonomy:   {taxonomy.label}
-Segment:    {taxonomy.segment.value}
-Source type: {extract.source_type}
-
-Content to validate:
+CONTENT TO VALIDATE:
   Key Facts ({len(extract.key_facts)}):
-    {chr(10).join(f'  - {f}' for f in extract.key_facts[:15])}
+{chr(10).join(f'    - {f}' for f in extract.key_facts[:15])}
 
   Core Concepts: {', '.join(extract.core_concepts)}
 
   Formulas ({len(extract.formulas)}):
-    {chr(10).join(f'  - {f}' for f in extract.formulas[:10])}
+{chr(10).join(f'    - {f}' for f in extract.formulas[:10])}
 
   Definitions ({len(extract.definitions)}):
-    {chr(10).join(f'  - {k}: {v}' for k, v in list(extract.definitions.items())[:8])}
+{chr(10).join(f'    - {k}: {v}' for k, v in list(extract.definitions.items())[:8])}
 
-Validation checks:
-1. Are these facts accurate for {taxonomy.label}?
-2. Are they within the correct syllabus scope?
-3. Are there any hallucinated/uncertain claims?
-4. Are formulas/definitions correct?
-5. Is there sufficient content (min 5 facts, 3 concepts)?
+VALIDATION CHECKS (answer all 5):
+  1. Are these facts accurate for {taxonomy.label}?
+  2. Are they within the correct syllabus scope (not too advanced/basic)?
+  3. Are there hallucinated or uncertain claims?
+  4. Are formulas and definitions correct?
+  5. Is there sufficient content (min 5 facts, 3 concepts)?
 
-Return ONLY valid JSON:
-{{
-  "is_valid":         true | false,
-  "confidence":       0-100,
-  "flags":            [] | ["factual_error", "out_of_syllabus", "hallucination_risk", "incomplete_content", "formula_error"],
-  "corrections":      {{"original": "corrected", ...}},
-  "rejection_reason": null | "reason if is_valid=false"
-}}
+OUTPUT FLAGS (use only these exact string values):
+  "factual_error" | "out_of_syllabus" | "hallucination_risk" | "incomplete_content" | "formula_error"
 
-Be strict about factual errors and hallucinations.
-Be lenient about minor incompleteness (if 4+ facts exist, pass with incomplete_content flag).
+POLICY:
+  - Be strict about factual errors and hallucinations
+  - Be lenient about minor incompleteness: if 4+ facts exist, pass with incomplete_content flag
+  - corrections: map original wrong text to corrected text (empty dict if none)
+  - rejection_reason: null if is_valid=true, specific reason string if false
 """.strip()
 
 
@@ -123,7 +97,9 @@ def _heuristic_check(extract: RawExtract) -> tuple[bool, list[ValidationFlag], s
 def run(extract: RawExtract) -> ValidationReport:
     """
     Run চিত্রগুপ্ত validation.
-    Fast heuristic check first, then LLM deep check.
+    1. Fast heuristic check (no LLM).
+    2. instructor-validated LLM deep check (no more null corrections bug).
+    3. Fallback: pass with hallucination_risk if all LLM attempts fail.
     """
     prompt_cfg = get_agent_prompt("chitragupta")
     emit_agent("চিত্রগুপ্ত", f"Validating content for: {extract.taxonomy.label}")
@@ -146,45 +122,42 @@ def run(extract: RawExtract) -> ValidationReport:
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            raw_json = _call_groq(
-                system      = prompt_cfg.system_prompt,
-                user        = user_prompt,
-                temperature = prompt_cfg.temperature,
-                max_tokens  = 1024,
+            output: ValidationOutput = call_llm(
+                system         = prompt_cfg.system_prompt,
+                user           = user_prompt,
+                response_model = ValidationOutput,
+                temperature    = prompt_cfg.temperature,
+                max_tokens     = 1024,
+                max_retries    = 2,
             )
 
-            parsed = json.loads(raw_json)
-
-            # Map string flags to enum
-            raw_flags = parsed.get("flags", [])
+            # Map string flags to enum (LLM may return any subset)
             valid_flag_values = {f.value for f in ValidationFlag}
             flags: list[ValidationFlag] = [
-                ValidationFlag(f) for f in raw_flags if f in valid_flag_values
+                ValidationFlag(f) for f in output.flags if f in valid_flag_values
             ] + heuristic_flags
 
             report = ValidationReport(
                 extract          = extract,
-                is_valid         = bool(parsed.get("is_valid", True)),
-                confidence       = int(parsed.get("confidence", 70)),
+                is_valid         = output.is_valid,
+                confidence       = output.confidence,
                 flags            = flags,
-                corrections      = parsed.get("corrections") or {},   # LLM may return null
-                rejection_reason = parsed.get("rejection_reason"),
+                corrections      = output.corrections,   # always a dict — null bug gone
+                rejection_reason = output.rejection_reason,
             )
 
             status = "✓ VALID" if report.is_valid else "✗ REJECTED"
             emit_agent("চিত্রগুপ্ত", f"{status} — confidence {report.confidence}% — flags: {[f.value for f in report.flags]}")
             return report
 
-        except (json.JSONDecodeError, ValidationError, KeyError) as e:
+        except InstructorRetryException as e:
             last_error = e
-            emit_progress(f"[চিত্রগুপ্ত] Attempt {attempt}/{MAX_RETRIES} failed: {e} — retrying")
-            time.sleep(1.5 * attempt)
-        except requests.HTTPError as e:
+            emit_progress(f"[চিত্রগুপ্ত] Attempt {attempt}/{MAX_RETRIES} — instructor validation failed: {e}")
+        except Exception as e:
             last_error = e
-            emit_progress(f"[চিত্রগুপ্ত] Groq HTTP error: {e} — retrying")
-            time.sleep(2 * attempt)
+            emit_progress(f"[চিত্রগুপ্ত] Attempt {attempt}/{MAX_RETRIES} — error: {e}")
 
-    # If LLM validation fails entirely, pass with warning (don't block pipeline)
+    # ── 3. Fallback: pass with warning rather than block pipeline ─────────────
     emit_agent("চিত্রগুপ্ত", f"LLM validation failed after {MAX_RETRIES} attempts — passing with warning flag")
     return ValidationReport(
         extract          = extract,
