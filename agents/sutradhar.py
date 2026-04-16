@@ -100,13 +100,14 @@ Return ONLY valid JSON with this exact structure:
   ],
   "mcqs": [
     {{
-      "question":    "Clear, unambiguous question",
-      "options":     {{"A": "...", "B": "...", "C": "...", "D": "..."}},
-      "correct":     "A" | "B" | "C" | "D",
-      "explanation": "Chain-of-thought: why correct option is right AND why distractors are wrong",
-      "difficulty":  "easy" | "medium" | "hard",
-      "bloom_level": "remember" | "understand" | "apply" | "analyze",
-      "topic_tag":   "sub-topic this tests"
+      "question":          "Clear, unambiguous question",
+      "options":           {{"A": "...", "B": "...", "C": "...", "D": "..."}},
+      "correct":           "A" | "B" | "C" | "D",
+      "reasoning_process": "Step-by-step: First, consider A — it is wrong because... B is correct because... C fails because... D fails because...",
+      "explanation":       "One sentence: the correct answer in plain language",
+      "difficulty":        "easy" | "medium" | "hard",
+      "bloom_level":       "remember" | "understand" | "apply" | "analyze",
+      "topic_tag":         "sub-topic this tests"
     }}
   ]
 }}
@@ -128,14 +129,18 @@ def _parse_mcqs(raw_list: list[dict]) -> list[MCQItem]:
     valid: list[MCQItem] = []
     for item in raw_list:
         try:
+            # Support LLM returning explanation only (no reasoning_process) — graceful fallback
+            explanation       = str(item.get("explanation", ""))
+            reasoning_process = str(item.get("reasoning_process") or item.get("chain_of_thought") or explanation)
             mcq = MCQItem(
-                question    = str(item["question"]),
-                options     = MCQOption(**item["options"]),
-                correct     = str(item["correct"]).upper(),
-                explanation = str(item.get("explanation", "")),
-                difficulty  = str(item.get("difficulty", "medium")),
-                bloom_level = str(item.get("bloom_level", "understand")),
-                topic_tag   = str(item.get("topic_tag", "")),
+                question          = str(item["question"]),
+                options           = MCQOption(**item["options"]),
+                correct           = str(item["correct"]).upper(),
+                reasoning_process = reasoning_process,
+                explanation       = explanation,
+                difficulty        = str(item.get("difficulty", "medium")),
+                bloom_level       = str(item.get("bloom_level", "understand")),
+                topic_tag         = str(item.get("topic_tag", "")),
             )
             valid.append(mcq)
         except (ValidationError, KeyError, TypeError):

@@ -108,13 +108,14 @@ class MCQOption(BaseModel):
 
 class MCQItem(BaseModel):
     """A single MCQ — সারং ততো গ্রাহ্যম্ — concise, conceptual, no trivia."""
-    question:       str
-    options:        MCQOption
-    correct:        str  = Field(pattern="^[ABCD]$")
-    explanation:    str  = Field(description="Chain-of-thought explanation of correct answer")
-    difficulty:     str  = Field(default="medium", pattern="^(easy|medium|hard)$")
-    bloom_level:    str  = Field(default="understand", description="remember|understand|apply|analyze")
-    topic_tag:      str  = Field(description="Exact sub-topic this question tests")
+    question:          str
+    options:           MCQOption
+    correct:           str  = Field(pattern="^[ABCD]$")
+    reasoning_process: str  = Field(description="Chain-of-thought: step-by-step reasoning that leads to the answer, explaining why each distractor fails")
+    explanation:       str  = Field(description="Concise 1-sentence summary of why the correct answer is right")
+    difficulty:        str  = Field(default="medium", pattern="^(easy|medium|hard)$")
+    bloom_level:       str  = Field(default="understand", description="remember|understand|apply|analyze")
+    topic_tag:         str  = Field(description="Exact sub-topic this question tests")
 
 class StudyNote(BaseModel):
     """Structured study material for one topic/chapter."""
