@@ -167,7 +167,7 @@ def run(extract: RawExtract) -> ValidationReport:
                 is_valid         = bool(parsed.get("is_valid", True)),
                 confidence       = int(parsed.get("confidence", 70)),
                 flags            = flags,
-                corrections      = parsed.get("corrections", {}),
+                corrections      = parsed.get("corrections") or {},   # LLM may return null
                 rejection_reason = parsed.get("rejection_reason"),
             )
 
