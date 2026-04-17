@@ -2,7 +2,7 @@
 """
 Gyan AI — Main Pipeline Orchestrator
 ======================================
-The relay race:  সর্বজ্ঞ → চিত্রগুপ্ত → সূত্রধর → Supabase
+The relay race:  Memory Check → সর্বজ্ঞ → চিত্রগুপ্ত → সূত্রধর → Supabase
 
 Usage (local / GitHub Actions):
   python gyan_pipeline.py --segment school --board WBBSE --class 10 \
@@ -20,8 +20,9 @@ Usage (local / GitHub Actions):
 Optional flags:
   --source-url  https://...   # fetch raw content from URL
   --source-pdf  /path/to.pdf  # extract from local PDF
+  --force                     # skip dedup memory check, always regenerate
 
-Stdout is JSON lines (parsed by Next.js /api/pipeline/run):
+Stdout is JSON lines (parsed by Next.js / Streamlit):
   {"type": "agent",    "agent": "সর্বজ্ঞ", "msg": "..."}
   {"type": "progress", "msg": "..."}
   {"type": "result",   "pyqs": 5, "notes": 1, "errors": 0, "elapsed_s": 14.2}
@@ -58,6 +59,8 @@ def parse_args() -> argparse.Namespace:
     # Source (optional)
     p.add_argument("--source-url",  dest="source_url", default=None)
     p.add_argument("--source-pdf",  dest="source_pdf", default=None)
+    p.add_argument("--force",       action="store_true",
+                   help="Skip dedup memory check — always regenerate even if content exists")
     return p.parse_args()
 
 
@@ -80,6 +83,45 @@ def build_taxonomy(args: argparse.Namespace) -> TaxonomySlice:
     )
 
 
+def apply_dedup_memory(taxonomy: TaxonomySlice, force: bool) -> TaxonomySlice | None:
+    """
+    Check pipeline memory for existing MCQs on this taxonomy slice.
+
+    Returns:
+      None            → skip the pipeline entirely (enough content exists)
+      TaxonomySlice   → proceed (original or count-adjusted for top-up mode)
+
+    The --force flag bypasses this check entirely (useful for re-running after
+    a bad batch or when you deliberately want more variants).
+    """
+    if force:
+        emit_progress("[memory] --force flag set — skipping dedup check")
+        return taxonomy
+
+    from db.memory import check_existing_mcqs
+    existing = check_existing_mcqs(taxonomy)
+
+    if existing == 0:
+        return taxonomy  # no existing content — full pipeline run
+
+    requested = taxonomy.count
+
+    if existing >= requested:
+        emit_progress(
+            f"[memory] SKIP — {existing} MCQs already exist for «{taxonomy.label}» "
+            f"(requested {requested}). Use --force to regenerate."
+        )
+        return None  # signal to caller: skip pipeline
+
+    # Top-up: generate only the missing gap
+    gap = requested - existing
+    emit_progress(
+        f"[memory] TOP-UP — generating {gap} more MCQs to reach {requested} "
+        f"(already have {existing} for «{taxonomy.label}»)"
+    )
+    return taxonomy.model_copy(update={"count": gap})
+
+
 # ── Load source text (if provided) ────────────────────────────────────────────
 
 def load_source_text(taxonomy: TaxonomySlice) -> str:
@@ -99,11 +141,20 @@ def load_source_text(taxonomy: TaxonomySlice) -> str:
 
 # ── Main pipeline ─────────────────────────────────────────────────────────────
 
-def run(taxonomy: TaxonomySlice) -> PipelineResult:
+def run(taxonomy: TaxonomySlice, force: bool = False) -> PipelineResult:
     start = time.time()
     errors = 0
 
     emit_progress(f"━━━ Gyan AI Pipeline starting: {taxonomy.label} ━━━")
+
+    # ── Step 0: Dedup Memory Check ────────────────────────────────────────────
+    emit_progress("Step 0/4 — Memory check (dedup)")
+    taxonomy = apply_dedup_memory(taxonomy, force)
+    if taxonomy is None:
+        # Enough content already exists — exit cleanly, no tokens spent
+        elapsed = round(time.time() - start, 2)
+        return PipelineResult(pyqs=0, notes=0, errors=0, elapsed_s=elapsed, skipped=True)
+
     emit_progress(f"Step 1/4 — Loading source material")
 
     # ── Load source ───────────────────────────────────────────────────────────
@@ -168,6 +219,15 @@ def run(taxonomy: TaxonomySlice) -> PipelineResult:
         f"━━━ Done in {elapsed}s — "
         f"{result.pyqs} MCQs + {result.notes} notes → triage queue ━━━"
     )
+
+    # ── Post-push: milestone check (Sanjaya) ──────────────────────────────────
+    if result.pyqs > 0:
+        try:
+            from db.memory import after_push_checks
+            after_push_checks(result.pyqs)
+        except Exception:
+            pass  # never let milestone check crash the pipeline
+
     return result
 
 
@@ -179,7 +239,7 @@ def main() -> None:
     taxonomy = build_taxonomy(args)
 
     try:
-        result = run(taxonomy)
+        result = run(taxonomy, force=args.force)
         # Final result line — parsed by Next.js /api/pipeline/run
         print(json.dumps(result.model_dump(), ensure_ascii=False), flush=True)
         sys.exit(0 if result.errors == 0 else 1)

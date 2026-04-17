@@ -67,6 +67,67 @@ def _norm_score(score) -> float:
     return round(s * 100, 1) if s <= 1.0 else round(s, 1)
 
 
+# ── Sanjaya Milestone Renderer ────────────────────────────────────────────────
+# Mirror of MILESTONES in db/memory.py — keep in sync if you add milestones.
+_SANJAYA_MILESTONES = [
+    (100,  "🎯 100 MCQs",   "Pilot cohort ready. Track first student completions."),
+    (500,  "🚀 DSPy Time",  "SC-001: Implement DSPy optimizer. See SANJAYA_CHRONICLES.md."),
+    (1000, "🔍 pgvector",   "SC-002: Enable semantic search for অন্বেষক."),
+    (2500, "🤖 PydanticAI", "SC-003: Build বেতাল + নারদ student-facing agents."),
+    (5000, "🌟 Full WB",    "Full West Bengal curriculum coverage approaching."),
+]
+
+def _render_sanjaya_milestone(live_mcq_count: int) -> None:
+    """
+    Render a Sanjaya milestone progress banner in the dashboard.
+    Shows progress toward the next upcoming milestone, and celebrates crossed ones.
+    """
+    # Find next uncrossed milestone
+    next_milestone = None
+    crossed = []
+    for threshold, label, action in _SANJAYA_MILESTONES:
+        if live_mcq_count >= threshold:
+            crossed.append((threshold, label, action))
+        else:
+            if next_milestone is None:
+                next_milestone = (threshold, label, action)
+
+    # ── Active milestone alert (DSPy specifically) ────────────────────────────
+    if live_mcq_count >= 500:
+        st.success(
+            "🚀 **[SANJAYA — SC-001 TRIGGERED]** You have **500+ live MCQs!**  \n"
+            "**Action**: Implement the **DSPy optimizer** to auto-tune agent prompts.  \n"
+            "See `SANJAYA_CHRONICLES.md → Entry SC-001` for the full implementation plan.",
+            icon="🧠",
+        )
+
+    # ── Progress bar toward next milestone ────────────────────────────────────
+    if next_milestone:
+        threshold, label, action = next_milestone
+        prev_threshold = crossed[-1][0] if crossed else 0
+        progress_in_band = live_mcq_count - prev_threshold
+        band_size        = threshold - prev_threshold
+        progress_pct     = min(progress_in_band / band_size, 1.0)
+
+        with st.container():
+            cols = st.columns([3, 1])
+            with cols[0]:
+                st.caption(
+                    f"**Sanjaya** · Next milestone: **{label}** at {threshold} MCQs "
+                    f"— {action}"
+                )
+                st.progress(progress_pct)
+            with cols[1]:
+                st.caption(
+                    f"{live_mcq_count} / {threshold} MCQs  \n"
+                    f"({threshold - live_mcq_count} to go)"
+                )
+    elif crossed:
+        # All milestones crossed — celebrate
+        st.balloons()
+        st.success("🏆 **All Sanjaya milestones reached!** Gyan AI is fully battle-tested.")
+
+
 # ── Supabase client ───────────────────────────────────────────────────────────
 @st.cache_resource
 def get_supabase() -> Client:
@@ -135,6 +196,9 @@ def page_dashboard():
     c3.metric("Pending Review",   pending_count, help="In ingestion_triage_queue (pending)")
     c4.metric("Total Approved",   approved_count)
     c5.metric("Total Rejected",   rejected_count)
+
+    # ── Sanjaya Milestone Tracker ─────────────────────────────────────────────
+    _render_sanjaya_milestone(pyq_count)
 
     st.markdown("---")
 
@@ -477,6 +541,17 @@ def page_pipeline():
             }
             workflow = "ingest_it.yml"
             valid = bool(provider and exam and topic)
+
+        # ── Dedup memory override ─────────────────────────────────────────────
+        st.markdown("---")
+        force = st.checkbox(
+            "⚡ Force regenerate (skip dedup memory check)",
+            value=False,
+            help="By default, the pipeline skips topics that already have enough MCQs. "
+                 "Check this to regenerate even if content exists — useful after a bad batch.",
+        )
+        if force:
+            inputs["force"] = "true"
 
         submitted = st.form_submit_button("🚀 Run Pipeline", type="primary", disabled=not valid)
 

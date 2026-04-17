@@ -188,10 +188,12 @@ class MCQBatchVerification(BaseModel):
 # ── Pipeline Result (stdout JSON for Next.js) ─────────────────────────────────
 
 class PipelineResult(BaseModel):
-    """Emitted as final JSON line to stdout — parsed by /api/pipeline/run."""
-    type:       str = "result"
-    pyqs:       int = 0
-    notes:      int = 0
-    errors:     int = 0
+    """Emitted as final JSON line to stdout — parsed by Streamlit / GitHub Actions."""
+    type:       str  = "result"
+    pyqs:       int  = 0
+    notes:      int  = 0
+    errors:     int  = 0
     elapsed_s:  float = 0.0
     queued_ids: list[str] = Field(default_factory=list)
+    skipped:    bool = Field(default=False,
+                             description="True when dedup memory decided no new content needed")
