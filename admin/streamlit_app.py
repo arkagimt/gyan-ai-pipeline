@@ -970,28 +970,47 @@ def _render_note(raw: dict):
 def _approve_item(db: Client, row: dict, data_type: str):
     """
     Move triage item to pyq_bank_v2 or study_materials.
-    FIXED: hierarchy_node_id=None (was "" which broke FK constraint to exam_hierarchy).
+
+    RCA notes — why columns are kept separate:
+      pyq_bank_v2    → has question_payload, NOT data_payload
+      study_materials → has data_payload, NOT question_payload
+    Sending a column name that doesn't exist in the target table causes
+    PGRST204 even when the value is None. Build per-table dicts.
     """
     raw     = row.get("raw_data") or {}
     segment = row.get("segment", "school")
     region  = "global" if segment == "it" else "wb"
-    target  = "pyq_bank_v2" if data_type == "pyq" else "study_materials"
     score   = _norm_score(row.get("ai_accuracy_score")) or 70.0
+    subject = (
+        raw.get("subject") or raw.get("topic_tag") or
+        raw.get("topic_title") or raw.get("taxonomy_label") or segment
+    )
 
-    insert_row = {
-        "hierarchy_node_id": None,        # FK to exam_hierarchy — nullable (ON DELETE SET NULL)
+    # Common fields present in BOTH tables
+    _common = {
+        "hierarchy_node_id": None,   # FK to exam_hierarchy — nullable
         "region_id":         region,
-        "subject_or_topic": (
-            raw.get("subject") or raw.get("topic_tag") or
-            raw.get("topic_title") or raw.get("taxonomy_label") or segment
-        ),
-        "question_payload":  raw  if data_type == "pyq"      else None,
-        "data_payload":      raw  if data_type == "material"  else None,
+        "subject_or_topic":  subject,
         "probability_score": score,
-        "ai_accuracy_score": score,
-        "validation_flags":  row.get("validation_flags") or [],
         "verified_by_human": True,
     }
+
+    if data_type == "pyq":
+        target     = "pyq_bank_v2"
+        insert_row = {
+            **_common,
+            "question_payload": raw,
+            "ai_accuracy_score": score,
+            "validation_flags":  row.get("validation_flags") or [],
+        }
+    else:
+        target     = "study_materials"
+        insert_row = {
+            **_common,
+            "data_payload": raw,
+            # ai_accuracy_score / validation_flags only added to study_materials
+            # if the column exists — omit to avoid PGRST204
+        }
 
     try:
         db.table(target).insert(insert_row).execute()
@@ -999,10 +1018,7 @@ def _approve_item(db: Client, row: dict, data_type: str):
         st.toast(f"✅ Approved → {target}", icon="✅")
     except Exception as e:
         st.error(f"❌ Approve failed: {e}")
-        st.caption(
-            "Debug: Check Supabase logs for the exact constraint. "
-            "The error above is the raw DB message."
-        )
+        st.caption("The error above is the exact DB message — use it to identify any missing column.")
 
 
 def _reject_item(db: Client, item_id: str):
