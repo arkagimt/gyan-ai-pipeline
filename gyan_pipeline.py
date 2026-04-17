@@ -158,8 +158,20 @@ def run(taxonomy: TaxonomySlice, force: bool = False) -> PipelineResult:
     emit_progress(f"Step 1/4 — Loading source material")
 
     # ── Load source ───────────────────────────────────────────────────────────
+    # Priority: explicit --source-pdf / --source-url > Supabase Storage textbook > LLM knowledge
     try:
         raw_text = load_source_text(taxonomy)
+
+        # If no explicit source given, check Supabase Storage for a stored textbook PDF
+        if not raw_text and taxonomy.segment.value == "school" and taxonomy.board and taxonomy.class_num:
+            emit_progress("[storage] No explicit source — checking Supabase Storage for textbook PDF")
+            from loaders.supabase_storage_loader import fetch_textbook_text
+            stored_text = fetch_textbook_text(taxonomy)
+            if stored_text:
+                raw_text = stored_text
+            else:
+                emit_progress("[storage] No textbook PDF found — agents will use LLM knowledge")
+
     except Exception as e:
         emit_error(f"Source loading failed: {e}")
         raw_text = ""

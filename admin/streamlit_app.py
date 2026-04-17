@@ -496,6 +496,7 @@ PAGES = [
     "🗺️ Coverage Map",
     "🔍 Triage Queue",
     "🚀 Smart Pipeline",
+    "📚 Textbooks",
     "🤖 Agent Prompts",
 ]
 
@@ -1107,6 +1108,15 @@ def page_pipeline():
         else:
             st.warning("**Currently:** 0 MCQs — this node is empty. Run the pipeline!")
 
+        if class_num <= 4 and not source_url:
+            st.error(
+                f"⚠️ **Class {class_num} without a source PDF will produce poor results.**  \n"
+                f"LLM doesn't know the actual {board} Class {class_num} textbook content.  \n"
+                f"→ Upload the official textbook in **📚 Textbooks** first, "
+                f"or paste a source URL above.",
+                icon="📖",
+            )
+
         chapter    = st.text_input("Chapter (optional)", placeholder="e.g. Electricity", key="school_chapter")
         source_url = st.text_input("Source URL (optional)", key="school_url")
         count      = st.slider("MCQ count", 3, 20, 5, key="school_count")
@@ -1273,6 +1283,184 @@ def page_prompts():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# PAGE 5 — TEXTBOOKS (Supabase Storage)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _subject_slug(subject: str) -> str:
+    import re as _re
+    return _re.sub(r"[^a-z0-9]+", "-", subject.lower()).strip("-")
+
+
+def page_textbooks():
+    st.title("📚 Textbooks")
+    st.caption(
+        "Upload official textbook PDFs to Supabase Storage. "
+        "The pipeline auto-fetches them when running for that board/class/subject — "
+        "no manual URL needed."
+    )
+
+    db      = get_supabase()
+    BUCKET  = "textbook-pdfs"
+    SB_URL  = st.secrets["SUPABASE_URL"]
+    SB_KEY  = st.secrets["SUPABASE_SERVICE_KEY"]
+
+    # ── Fetch existing sources ────────────────────────────────────────────────
+    try:
+        sources = db.table("curriculum_sources").select("*").order("board").order("class_num").execute().data or []
+    except Exception as e:
+        st.error(f"Could not load curriculum_sources: {e}")
+        st.info("Run `scripts/setup_textbook_storage.sql` in Supabase SQL Editor first.")
+        return
+
+    # ── Coverage: which curriculum nodes have a PDF? ──────────────────────────
+    sourced = {(r["board"], r["class_num"], r["subject"]) for r in sources if r.get("is_active")}
+
+    col_upload, col_status = st.columns([1, 1])
+
+    # ── UPLOAD PANEL ──────────────────────────────────────────────────────────
+    with col_upload:
+        st.subheader("⬆️ Upload Textbook PDF")
+
+        board_u    = st.selectbox("Board",    list(CURRICULUM.keys()), key="tb_board")
+        classes_u  = sorted(CURRICULUM[board_u].keys())
+        class_u    = st.selectbox("Class",    classes_u, format_func=lambda x: f"Class {x}", key="tb_class")
+        subjects_u = CURRICULUM[board_u][class_u]
+        subject_u  = st.selectbox("Subject",  subjects_u, key="tb_subject")
+        chapter_u  = st.text_input("Chapter (optional — leave blank for full textbook)",
+                                   placeholder="e.g. Electricity", key="tb_chapter")
+        display_u  = st.text_input("Display name (optional)",
+                                   placeholder=f"e.g. WBBSE Class {class_u} {subject_u} Textbook",
+                                   key="tb_display")
+
+        uploaded_file = st.file_uploader(
+            "Choose PDF",
+            type=["pdf"],
+            help="Upload the official textbook PDF. Max 50MB.",
+            key="tb_file",
+        )
+
+        # Warn if node already has a PDF
+        existing_key = (board_u, class_u, subject_u)
+        if existing_key in sourced:
+            st.warning("⚠️ A PDF already exists for this node. Uploading will replace it.")
+
+        if st.button("⬆️ Upload to Supabase Storage", type="primary",
+                     disabled=uploaded_file is None):
+            if uploaded_file:
+                slug      = _subject_slug(subject_u)
+                path      = f"{board_u.lower()}/{class_u}/{slug}.pdf"
+                file_size = len(uploaded_file.getvalue()) // 1024
+
+                with st.spinner(f"Uploading {file_size} KB..."):
+                    # Upload via Supabase Storage REST API
+                    upload_url = f"{SB_URL}/storage/v1/object/{BUCKET}/{path}"
+                    resp = requests.post(
+                        upload_url,
+                        headers={
+                            "Authorization": f"Bearer {SB_KEY}",
+                            "Content-Type":  "application/pdf",
+                            "x-upsert":      "true",  # overwrite if exists
+                        },
+                        data=uploaded_file.getvalue(),
+                        timeout=60,
+                    )
+
+                if resp.status_code in (200, 201):
+                    # Upsert curriculum_sources row
+                    row = {
+                        "board":        board_u,
+                        "class_num":    class_u,
+                        "subject":      subject_u,
+                        "chapter":      chapter_u or None,
+                        "storage_path": path,
+                        "display_name": display_u or f"{board_u} Class {class_u} {subject_u}",
+                        "file_size_kb": file_size,
+                        "is_active":    True,
+                        "uploaded_by":  "admin",
+                    }
+                    try:
+                        db.table("curriculum_sources").upsert(row,
+                            on_conflict="board,class_num,subject" + (",chapter" if chapter_u else "")
+                        ).execute()
+                        st.success(f"✅ Uploaded → `{path}` ({file_size} KB)")
+                        st.info("Pipeline will now auto-use this PDF for future runs on this node.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Upload succeeded but DB record failed: {e}")
+                else:
+                    st.error(f"Storage upload failed {resp.status_code}: {resp.text[:300]}")
+                    if resp.status_code == 404:
+                        st.caption(
+                            "Bucket `textbook-pdfs` not found. "
+                            "Create it in Supabase Dashboard → Storage → New Bucket (private)."
+                        )
+
+    # ── STATUS PANEL ──────────────────────────────────────────────────────────
+    with col_status:
+        st.subheader("📋 Uploaded Textbooks")
+
+        if not sources:
+            st.info("No textbooks uploaded yet. Use the upload form.")
+        else:
+            for row in sources:
+                active = row.get("is_active", True)
+                icon   = "✅" if active else "⏸️"
+                c1, c2 = st.columns([4, 1])
+                with c1:
+                    st.markdown(
+                        f"{icon} **{row.get('display_name') or row['subject']}**  \n"
+                        f"`{row['board']} · Class {row['class_num']}` · "
+                        f"{row.get('file_size_kb', '?')} KB · "
+                        f"`{row.get('storage_path', '—')}`"
+                    )
+                with c2:
+                    if active:
+                        if st.button("⏸", key=f"deact_{row['id']}",
+                                     help="Deactivate — pipeline won't use this PDF"):
+                            db.table("curriculum_sources").update({"is_active": False}).eq("id", row["id"]).execute()
+                            st.rerun()
+                    else:
+                        if st.button("▶", key=f"act_{row['id']}",
+                                     help="Activate — pipeline will use this PDF"):
+                            db.table("curriculum_sources").update({"is_active": True}).eq("id", row["id"]).execute()
+                            st.rerun()
+
+    st.markdown("---")
+
+    # ── Coverage gap: which nodes LACK a PDF? ────────────────────────────────
+    st.subheader("🔴 Nodes Without a Textbook PDF")
+    st.caption("These nodes will use LLM knowledge only — lower quality, especially for Class 1–5.")
+
+    missing = []
+    for board, classes in CURRICULUM.items():
+        for class_num, subjects in classes.items():
+            for subject in subjects:
+                if (board, class_num, subject) not in sourced:
+                    missing.append((board, class_num, subject))
+
+    missing.sort(key=lambda x: (-CLASS_PRIORITY.get(x[1], 1), x[0], x[1], x[2]))
+
+    if not missing:
+        st.success("🎉 All curriculum nodes have a textbook PDF!")
+    else:
+        # Show as a compact table
+        df_missing = pd.DataFrame(missing, columns=["Board", "Class", "Subject"])
+        df_missing["Class"] = df_missing["Class"].apply(lambda x: f"Class {x}")
+        df_missing["Priority"] = df_missing["Class"].apply(
+            lambda x: CLASS_PRIORITY.get(int(x.split()[-1]), 1)
+        )
+        st.dataframe(
+            df_missing[["Board", "Class", "Subject"]],
+            use_container_width=True,
+            hide_index=True,
+        )
+        st.caption(
+            f"{len(missing)} nodes without PDFs. "
+            "Download official textbooks from WBBSE / CBSE / ICSE websites and upload above."
+        )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # ROUTER
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1284,5 +1472,7 @@ elif page == "🔍 Triage Queue":
     page_triage()
 elif page == "🚀 Smart Pipeline":
     page_pipeline()
+elif page == "📚 Textbooks":
+    page_textbooks()
 elif page == "🤖 Agent Prompts":
     page_prompts()
