@@ -22,8 +22,20 @@ SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 GROQ_API_KEY         = os.environ.get("GROQ_API_KEY", "")
 SARVAM_API_KEY       = os.environ.get("SARVAM_API_KEY", "")
 
+# LLM models
 GROQ_MODEL           = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_GUARD_MODEL     = os.environ.get("GROQ_GUARD_MODEL", "llama-guard-3-8b")
 GROQ_API_URL         = "https://api.groq.com/openai/v1/chat/completions"
+
+# Sarvam — Indic-native model (Bengali / Hindi / Tamil etc.)
+# API docs: https://www.sarvam.ai/apis
+SARVAM_MODEL         = os.environ.get("SARVAM_MODEL", "sarvam-m")
+SARVAM_BASE_URL      = "https://api.sarvam.ai/v1"
+
+# Observability — optional Arize Phoenix endpoint
+# Set to run local Phoenix: PHOENIX_ENDPOINT=http://localhost:6006
+# Or use Arize cloud: PHOENIX_ENDPOINT=https://app.phoenix.arize.com/...
+PHOENIX_ENDPOINT     = os.environ.get("PHOENIX_ENDPOINT", "")
 
 MAX_RETRIES          = 3
 LLM_TIMEOUT_S        = 45

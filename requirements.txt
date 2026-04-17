@@ -1,3 +1,4 @@
+# ── Core pipeline ─────────────────────────────────────────────────────────────
 pydantic>=2.7
 groq>=0.9
 instructor>=1.3.0
@@ -5,3 +6,24 @@ supabase>=2.4
 python-dotenv>=1.0
 pdfplumber>=0.11
 requests>=2.31
+
+# ── Sarvam-M (Indic-native LLM for Bengali content)
+# Uses OpenAI-compatible client — openai is a transitive dep of instructor
+openai>=1.0
+
+# ── Observability (optional — install to enable Phoenix tracing)
+# pip install arize-phoenix-otel openinference-instrumentation-groq
+# Then set PHOENIX_ENDPOINT env var to activate
+# arize-phoenix-otel>=0.7
+# openinference-instrumentation-groq>=0.1
+
+# ── Future (uncomment when phases activate) ───────────────────────────────────
+# Phase 5 (Marker + Surya OCR for Bengali textbook PDFs):
+# marker-pdf>=0.2
+# surya-ocr>=0.4
+
+# Phase 9 (Ganak v2 — pgvector semantic coverage):
+# pgvector>=0.3
+
+# Phase 9 (DSPy MIPROv2 prompt optimiser):
+# dspy-ai>=2.4

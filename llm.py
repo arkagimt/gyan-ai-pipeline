@@ -1,25 +1,28 @@
 """
-LLM Client — Instructor-patched Groq
-======================================
+LLM Client — Multi-provider, Instructor-patched
+================================================
 Single source of truth for all LLM calls in the pipeline.
 
-Replaces the per-agent raw requests.post() pattern with a typed,
-validated, auto-retrying client.
+Providers:
+  • Groq / Llama-3.3-70b  — default for all English content
+  • Sarvam-M               — routed for Bengali content (WBBSE / WBCHSE boards)
+                             Sarvam is purpose-built for Indic languages;
+                             dramatically better Bengali than any English-first LLM.
 
-Inspired by:
-  github.com/jxnl/instructor   (MIT License)
-  — Structured LLM outputs with Pydantic validation + automatic retry.
-    When the LLM returns malformed JSON or fails a Pydantic validator,
-    instructor feeds the validation error back to the LLM and retries.
-    Zero silent failures — either you get a valid model or an exception.
+Routing:
+  call_llm(..., language="bn") → Sarvam-M (with Groq fallback on failure)
+  call_llm(...)                → Groq / Llama-3.3-70b (default)
 
-  github.com/guardrails-ai/guardrails   (Apache 2.0)
-  — "Reask" pattern: the LLM is asked to fix its own output.
-    We borrow this concept in সূত্রধর's _verify_mcqs() step.
+Observability:
+  Set PHOENIX_ENDPOINT env var to enable Arize Phoenix tracing.
+  All LLM calls are auto-instrumented via OpenInference.
+  No-op if the env var is absent or deps not installed.
 
-  github.com/stanfordnlp/dspy   (MIT)
-  — Signature philosophy: describe inputs + outputs explicitly,
-    not just instructions. Applied in our prompt builders.
+References:
+  github.com/jxnl/instructor   (MIT)  — structured output + auto-retry
+  github.com/stanfordnlp/dspy  (MIT)  — signature philosophy
+  sarvam.ai                           — Indic-native model API (OpenAI-compatible)
+  arize-phoenix.readthedocs.io (BSL)  — LLM observability
 """
 
 from __future__ import annotations
@@ -30,24 +33,94 @@ import instructor
 from groq import Groq
 from instructor.exceptions import InstructorRetryException
 
-from config import GROQ_API_KEY, GROQ_MODEL, emit_progress
+from config import (
+    GROQ_API_KEY, GROQ_MODEL,
+    SARVAM_API_KEY, SARVAM_MODEL, SARVAM_BASE_URL,
+    PHOENIX_ENDPOINT,
+    emit_progress,
+)
 
 T = TypeVar("T")
 
 
-# ── Instructor-patched Groq client (singleton) ────────────────────────────────
+# ── Phoenix tracing (optional) ────────────────────────────────────────────────
+
+def _setup_tracing() -> None:
+    """
+    Instruments all LLM calls with Arize Phoenix if PHOENIX_ENDPOINT is set.
+    Completely silent / no-op if:
+      • PHOENIX_ENDPOINT env var is not set
+      • arize-phoenix-otel or openinference packages are not installed
+    Install: pip install arize-phoenix-otel openinference-instrumentation-groq
+    """
+    if not PHOENIX_ENDPOINT:
+        return
+    try:
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+        from opentelemetry.sdk.trace import TracerProvider
+        from openinference.instrumentation.groq import GroqInstrumentor
+
+        provider = TracerProvider()
+        provider.add_span_processor(
+            BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{PHOENIX_ENDPOINT}/v1/traces"))
+        )
+        GroqInstrumentor().instrument(tracer_provider=provider)
+        emit_progress(f"[tracing] 🔭 Phoenix observability active → {PHOENIX_ENDPOINT}")
+    except ImportError:
+        emit_progress(
+            "[tracing] Phoenix deps not installed — skipping. "
+            "To enable: pip install arize-phoenix-otel openinference-instrumentation-groq"
+        )
+
+
+_tracing_initialized = False
+
+
+def _ensure_tracing() -> None:
+    global _tracing_initialized
+    if not _tracing_initialized:
+        _setup_tracing()
+        _tracing_initialized = True
+
+
+# ── Groq instructor client (singleton) ───────────────────────────────────────
 
 @functools.lru_cache(maxsize=1)
-def _get_client() -> instructor.Instructor:
+def _get_groq_client() -> instructor.Instructor:
     """
-    Returns an instructor-patched Groq client.
-    instructor.Mode.JSON = uses Groq's native JSON mode (same as response_format: json_object),
-    but adds Pydantic schema injection + validation retry loop on top.
+    Instructor-patched Groq client.
+    Mode.JSON = Groq native JSON mode + Pydantic schema injection + retry.
     """
     return instructor.from_groq(
         Groq(api_key=GROQ_API_KEY),
         mode=instructor.Mode.JSON,
     )
+
+
+# ── Sarvam instructor client (singleton) ─────────────────────────────────────
+
+@functools.lru_cache(maxsize=1)
+def _get_sarvam_client() -> instructor.Instructor | None:
+    """
+    Instructor-patched Sarvam client via OpenAI-compatible endpoint.
+    Returns None if SARVAM_API_KEY is not configured.
+
+    Sarvam-M is purpose-built for Indic languages including Bengali.
+    Produces dramatically better Bengali MCQs than Llama-3.3-70B.
+    See: https://www.sarvam.ai/
+    """
+    if not SARVAM_API_KEY:
+        return None
+    try:
+        from openai import OpenAI
+        return instructor.from_openai(
+            OpenAI(api_key=SARVAM_API_KEY, base_url=SARVAM_BASE_URL),
+            mode=instructor.Mode.JSON,
+        )
+    except Exception as e:
+        emit_progress(f"[llm] Sarvam client init failed: {e} — will use Groq fallback")
+        return None
 
 
 # ── Main call function ────────────────────────────────────────────────────────
@@ -59,20 +132,49 @@ def call_llm(
     temperature:    float = 0.3,
     max_tokens:     int   = 4096,
     max_retries:    int   = 3,
+    language:       str   = "en",   # "bn" → route to Sarvam-M for Bengali
 ) -> T:
     """
-    Call Groq with instructor's structured output layer.
+    Unified LLM call with automatic provider routing.
+
+    language="bn"  → tries Sarvam-M first (Indic-native), falls back to Groq.
+    language="en"  → uses Groq / Llama-3.3-70b directly.
 
     On each attempt:
-      1. Sends system + user messages to Groq with JSON mode.
-      2. instructor extracts the JSON and validates against response_model.
-      3. If validation fails, instructor sends the Pydantic error back to
-         the LLM as a follow-up message: "Please fix these errors: ..."
+      1. Sends system + user messages with JSON mode.
+      2. instructor extracts JSON and validates against response_model.
+      3. If validation fails, instructor sends the Pydantic error back
+         to the LLM for self-correction.
       4. After max_retries exhausted, raises InstructorRetryException.
-
-    Callers should catch InstructorRetryException for graceful fallback.
     """
-    client = _get_client()
+    _ensure_tracing()
+
+    # ── Bengali routing → Sarvam-M ────────────────────────────────────────────
+    if language == "bn":
+        sarvam = _get_sarvam_client()
+        if sarvam:
+            try:
+                return sarvam.chat.completions.create(
+                    model          = SARVAM_MODEL,
+                    messages       = [
+                        {"role": "system", "content": system},
+                        {"role": "user",   "content": user},
+                    ],
+                    response_model = response_model,
+                    temperature    = temperature,
+                    max_tokens     = max_tokens,
+                    max_retries    = max_retries,
+                )
+            except Exception as e:
+                emit_progress(
+                    f"[llm] Sarvam-M failed ({type(e).__name__}: {str(e)[:80]}) "
+                    f"— falling back to Groq"
+                )
+        else:
+            emit_progress("[llm] SARVAM_API_KEY not set — using Groq for Bengali content")
+
+    # ── Default → Groq / Llama ────────────────────────────────────────────────
+    client = _get_groq_client()
     return client.chat.completions.create(
         model          = GROQ_MODEL,
         messages       = [
