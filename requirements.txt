@@ -21,10 +21,14 @@ openai>=1.0
 # openinference-instrumentation-groq>=0.1
 # openinference-instrumentation-openai>=0.1
 
-# ── Future (uncomment when phases activate) ───────────────────────────────────
-# Phase 5 (Marker + Surya OCR for Bengali textbook PDFs):
-# marker-pdf>=0.2
-# surya-ocr>=0.4
+# ── Phase 6 — Marker + Surya OCR for Bengali textbook PDFs ────────────────────
+# NOT installed by default — these pull torch (~2GB) + Surya weights.
+# Run OCR only via .github/workflows/ocr_textbook.yml (separate workflow,
+# 60-min timeout). Regular ingest runs never touch Marker.
+# To install on the OCR worker:
+#   pip install --index-url https://download.pytorch.org/whl/cpu torch
+#   pip install marker-pdf
+# marker-pdf>=1.0      # wraps Surya internally
 
 # Phase 9 (Ganak v2 — pgvector semantic coverage):
 # pgvector>=0.3

@@ -1,0 +1,88 @@
+name: 📖 OCR — Textbook PDF (Marker + Surya)
+
+# Run this ONCE per textbook (not per ingest).
+# OCR'd text is cached as a .txt sibling in Supabase Storage so future
+# ingest_*.yml runs stay fast.
+
+on:
+  workflow_dispatch:
+    inputs:
+      storage_path:
+        description: 'Direct storage path (e.g. "wbbse/10/physical-science.pdf"). Leave blank to use board/class/subject.'
+        required: false
+        default: ''
+      board:
+        description: 'Board (if storage_path is blank)'
+        required: false
+        default: 'WBBSE'
+        type: choice
+        options: [WBBSE, WBCHSE, CBSE, ICSE]
+      class_num:
+        description: 'Class number (if storage_path is blank)'
+        required: false
+        default: '10'
+      subject:
+        description: 'Subject (if storage_path is blank)'
+        required: false
+        default: 'Physical Science'
+      langs:
+        description: 'Surya language codes (comma-separated)'
+        required: true
+        default: 'bn,en'
+      force:
+        description: 'Re-OCR even if .txt already exists'
+        required: true
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+jobs:
+  ocr:
+    runs-on: ubuntu-latest
+    # Marker cold-start + a 100-page textbook can easily exceed the ingest
+    # pipeline's 15-min timeout. OCR gets its own generous budget.
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout pipeline repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install base requirements
+        run: pip install -r requirements.txt
+
+      - name: Install Marker + torch (CPU wheels)
+        run: |
+          # CPU-only torch keeps the install small enough for GH Actions.
+          # For large batches consider a self-hosted GPU runner.
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install marker-pdf
+
+      - name: Run OCR → upload .txt sibling
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          # Marker/Surya respect these to avoid re-downloading models on every run
+          HF_HOME:              ${{ github.workspace }}/.cache/huggingface
+          TORCH_HOME:           ${{ github.workspace }}/.cache/torch
+        run: |
+          ARGS="--langs ${{ github.event.inputs.langs }}"
+
+          if [ -n "${{ github.event.inputs.storage_path }}" ]; then
+            ARGS="$ARGS --path \"${{ github.event.inputs.storage_path }}\""
+          else
+            ARGS="$ARGS --board ${{ github.event.inputs.board }} \
+                       --class ${{ github.event.inputs.class_num }} \
+                       --subject \"${{ github.event.inputs.subject }}\""
+          fi
+
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            ARGS="$ARGS --force"
+          fi
+
+          eval python scripts/ocr_textbook.py $ARGS

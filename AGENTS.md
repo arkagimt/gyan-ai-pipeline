@@ -10,7 +10,7 @@ added, renamed, extracted, or repositioned.
 
 | Website Name | Bengali | Role | Implementation | Notes |
 |---|---|---|---|---|
-| **Sarbagya** | সর্বজ্ঞ | The Scout & Ingestor | `agents/sarbagya.py` | Extracts facts/concepts from source material (PDF/URL/LLM knowledge). |
+| **Sarbagya** | সর্বজ্ঞ | The Scout & Ingestor | `agents/sarbagya.py` + `loaders/{pdf,web,ocr,supabase_storage}_loader.py` | Extracts facts/concepts from source material. Phase 6: Bengali textbooks go through Marker+Surya OCR (offline, via `scripts/ocr_textbook.py` + `ocr_textbook.yml` workflow). Ingest runs read the cached `.txt` sibling — no OCR inside the 15-min ingest window. |
 | **Sutradhar** | সূত্রধর | The Conceptual Guide | `agents/sutradhar.py` | Synthesizes study notes + MCQs from validated content. |
 | **Vidushak** | বিদূষক | The Adversarial Critic | `agents/vidushak.py` | Self-critique pass on Sutradhar's MCQs. Flags hallucinations, wrong answers, accidentally-correct distractors, language/age mismatches. |
 | **Chitragupta** | চিত্রগুপ্ত | The Quality Gatekeeper | `agents/chitragupta.py` + `admin/streamlit_app.py` triage page | Two faces: (1) pre-generation content validation (code), (2) admin-triage gatekeeping before DB promotion (Streamlit + DB rules). |

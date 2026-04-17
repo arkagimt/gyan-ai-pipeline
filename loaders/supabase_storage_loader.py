@@ -29,6 +29,10 @@ from config import SUPABASE_URL, SUPABASE_SERVICE_KEY, emit_progress
 from models.schemas import TaxonomySlice
 
 
+# Bucket holds both PDFs and their OCR'd .txt siblings.
+# Convention: if a textbook lives at `wbbse/10/physical-science.pdf`,
+# the pre-OCR'd text (produced by scripts/ocr_textbook.py via Marker+Surya)
+# lives at `wbbse/10/physical-science.txt`. Pipeline prefers the .txt.
 BUCKET      = "textbook-pdfs"
 REST_URL    = f"{SUPABASE_URL}/rest/v1"
 STORAGE_URL = f"{SUPABASE_URL}/storage/v1"
@@ -48,6 +52,13 @@ def _subject_slug(subject: str) -> str:
 
 def storage_path(board: str, class_num: int, subject: str) -> str:
     return f"{board.lower()}/{class_num}/{_subject_slug(subject)}.pdf"
+
+
+def txt_sibling_path(pdf_storage_path: str) -> str:
+    """`wbbse/10/physical-science.pdf` → `wbbse/10/physical-science.txt`"""
+    if pdf_storage_path.endswith(".pdf"):
+        return pdf_storage_path[:-4] + ".txt"
+    return pdf_storage_path + ".txt"
 
 
 # ── curriculum_sources lookup ─────────────────────────────────────────────────
@@ -97,17 +108,56 @@ def lookup_source(taxonomy: TaxonomySlice) -> dict | None:
 
 # ── PDF download + extract ────────────────────────────────────────────────────
 
-def _download_pdf_bytes(storage_path_: str) -> bytes | None:
-    """Download raw PDF bytes from Supabase Storage."""
+def _download_bytes(storage_path_: str, *, log_404: bool = True) -> bytes | None:
+    """Download raw bytes from Supabase Storage. Used for both .pdf and .txt."""
     url = f"{STORAGE_URL}/object/{BUCKET}/{storage_path_}"
     try:
         resp = requests.get(url, headers=_HEADERS, timeout=30)
         if resp.status_code == 200:
             return resp.content
-        emit_progress(f"[storage] Download HTTP {resp.status_code} for {storage_path_}")
+        # 404 on the .txt probe is the common path (textbook hasn't been OCR'd yet)
+        if resp.status_code != 404 or log_404:
+            emit_progress(f"[storage] Download HTTP {resp.status_code} for {storage_path_}")
     except Exception as exc:
         emit_progress(f"[storage] Download error: {exc}")
     return None
+
+
+# Backward compat — some callers still use the old name.
+def _download_pdf_bytes(storage_path_: str) -> bytes | None:
+    return _download_bytes(storage_path_)
+
+
+def _upload_bytes(storage_path_: str, data: bytes, content_type: str) -> bool:
+    """Upload bytes to Supabase Storage (PUT — overwrites existing object)."""
+    url = f"{STORAGE_URL}/object/{BUCKET}/{storage_path_}"
+    headers = {
+        "apikey":        SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "Content-Type":  content_type,
+        "x-upsert":      "true",
+    }
+    try:
+        resp = requests.put(url, headers=headers, data=data, timeout=60)
+        if resp.status_code in (200, 201):
+            return True
+        emit_progress(f"[storage] Upload HTTP {resp.status_code}: {resp.text[:200]}")
+    except Exception as exc:
+        emit_progress(f"[storage] Upload error: {exc}")
+    return False
+
+
+def upload_ocr_text(pdf_storage_path: str, ocr_text: str) -> bool:
+    """
+    Called by scripts/ocr_textbook.py after running Marker.
+    Saves the OCR output as a .txt sibling so future ingest runs skip OCR.
+    """
+    txt_path = txt_sibling_path(pdf_storage_path)
+    return _upload_bytes(
+        txt_path,
+        ocr_text.encode("utf-8"),
+        content_type="text/plain; charset=utf-8",
+    )
 
 
 def _extract_text_from_bytes(pdf_bytes: bytes, max_chars: int = 80_000) -> str:
@@ -140,13 +190,16 @@ def _extract_text_from_bytes(pdf_bytes: bytes, max_chars: int = 80_000) -> str:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def fetch_textbook_text(taxonomy: TaxonomySlice) -> str | None:
+def fetch_textbook_text(taxonomy: TaxonomySlice, max_chars: int = 80_000) -> str | None:
     """
     Main entry point — called by gyan_pipeline.py before running agents.
 
-    Returns:
-      str  — extracted PDF text (ready to pass to সর্বজ্ঞ)
-      None — no PDF found for this node (pipeline uses LLM knowledge)
+    Lookup order:
+      1. Pre-OCR'd `.txt` sibling (produced by scripts/ocr_textbook.py).
+         Bengali boards (WBBSE/WBCHSE) *require* this — pdfplumber can't
+         read Bengali Unicode from scanned textbooks reliably.
+      2. Raw `.pdf` via pdfplumber (works fine for CBSE/ICSE text PDFs).
+      3. None → pipeline falls back to LLM knowledge.
     """
     source_row = lookup_source(taxonomy)
     if not source_row:
@@ -159,12 +212,32 @@ def fetch_textbook_text(taxonomy: TaxonomySlice) -> str | None:
 
     emit_progress(f"[storage] Found textbook: {label}")
 
-    pdf_bytes = _download_pdf_bytes(path)
+    # ── 1. Prefer pre-OCR'd .txt sibling ──────────────────────────────────────
+    txt_path  = txt_sibling_path(path)
+    txt_bytes = _download_bytes(txt_path, log_404=False)
+    if txt_bytes:
+        text = txt_bytes.decode("utf-8", errors="replace")
+        emit_progress(
+            f"[storage] Using pre-OCR'd text ({len(text)} chars) from {txt_path}"
+        )
+        return text[:max_chars]
+
+    # ── 2. Fallback to raw .pdf ──────────────────────────────────────────────
+    # Bengali boards won't get good text from pdfplumber — warn the admin so
+    # they know to run scripts/ocr_textbook.py for this source.
+    if taxonomy.board in ("WBBSE", "WBCHSE"):
+        emit_progress(
+            f"[storage] ⚠ No OCR'd .txt found for Bengali textbook «{label}». "
+            f"pdfplumber may mangle Bengali script. "
+            f"Run scripts/ocr_textbook.py --path {path} to pre-OCR this source."
+        )
+
+    pdf_bytes = _download_bytes(path)
     if not pdf_bytes:
         emit_progress(f"[storage] Could not download {path} — falling back to LLM knowledge")
         return None
 
     emit_progress(f"[storage] Extracting text from {len(pdf_bytes) // 1024} KB PDF...")
-    text = _extract_text_from_bytes(pdf_bytes)
+    text = _extract_text_from_bytes(pdf_bytes, max_chars=max_chars)
     emit_progress(f"[storage] Extracted {len(text)} chars from textbook")
     return text
