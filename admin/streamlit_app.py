@@ -18,6 +18,8 @@ Secrets required (Streamlit Cloud → App settings → Secrets):
 """
 
 from __future__ import annotations
+import sys
+import os
 import json
 import requests
 import streamlit as st
@@ -26,6 +28,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 from supabase import create_client, Client
 from datetime import datetime
+
+# Allow importing pipeline modules from parent directory
+_PIPELINE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _PIPELINE_ROOT not in sys.path:
+    sys.path.insert(0, _PIPELINE_ROOT)
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -69,10 +76,15 @@ st.session_state.setdefault("prefill", None)
 st.session_state.setdefault("page", "📊 Command Centre")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# CURRICULUM DATA
+# CURRICULUM DATA  — imported from shared curriculum.py (canonical source)
+# sys.path already includes the pipeline root (added above)
 # ═══════════════════════════════════════════════════════════════════════════════
+from curriculum import (
+    CURRICULUM, CLASS_PRIORITY, COMPETITIVE_TREE, IT_TREE,
+)
 
-CURRICULUM: dict[str, dict[int, list[str]]] = {
+# ── LEGACY INLINE DATA (kept as emergency fallback — remove after v3 deploy) ──
+_LEGACY_CURRICULUM: dict[str, dict[int, list[str]]] = {
     "WBBSE": {
         1:  ["Bengali", "English", "Mathematics"],
         2:  ["Bengali", "English", "Mathematics"],
@@ -301,6 +313,8 @@ IT_TREE: dict[str, dict[str, list[str]]] = {
         ],
     },
 }
+
+# ── End legacy data block ─────────────────────────────────────────────────────
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HELPERS
