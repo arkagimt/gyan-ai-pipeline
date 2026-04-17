@@ -1008,12 +1008,15 @@ def _approve_item(db: Client, row: dict, data_type: str):
             "validation_flags":  row.get("validation_flags") or [],
         }
     else:
-        target     = "study_materials"
+        target = "study_materials"
+        # study_materials has different columns — drop subject_or_topic which
+        # doesn't exist there (PGRST204). Only send columns we know exist.
         insert_row = {
-            **_common,
-            "data_payload": raw,
-            # ai_accuracy_score / validation_flags only added to study_materials
-            # if the column exists — omit to avoid PGRST204
+            "hierarchy_node_id": None,
+            "region_id":         None,
+            "data_payload":      raw,
+            "probability_score": score,
+            "verified_by_human": True,
         }
 
     try:
