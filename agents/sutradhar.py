@@ -68,6 +68,81 @@ verdict must be exactly "ok" or "has_issue".
 """
 
 
+# ── Language + age calibration ────────────────────────────────────────────────
+
+def _language_instruction(taxonomy) -> str:
+    """
+    Determines output language based on board.
+    WBBSE / WBCHSE are Bengali-medium boards → questions must be in Bengali.
+    """
+    if taxonomy.board in ("WBBSE", "WBCHSE"):
+        return (
+            "LANGUAGE: Bengali-medium board detected.\n"
+            "  → Generate ALL question stems, ALL options (A/B/C/D), explanations,\n"
+            "    and topic_tag IN BENGALI (বাংলা Unicode).\n"
+            "  → reasoning_process may be in English for internal clarity.\n"
+            "  → Use vocabulary appropriate for the class level."
+        )
+    return "LANGUAGE: Generate in English."
+
+
+def _age_calibration(taxonomy) -> str:
+    """
+    Returns age-appropriate difficulty and content constraints by class.
+    This is the single most important quality lever for lower primary.
+    """
+    cls = taxonomy.class_num or 10
+
+    if cls <= 2:
+        return (
+            "AGE CALIBRATION (Class 1–2, age 6–7):\n"
+            "  → difficulty: 'easy' ONLY — no medium or hard\n"
+            "  → bloom_level: 'remember' ONLY\n"
+            "  → Questions must be about SPECIFIC items directly from the lesson:\n"
+            "    letters, animals, family words, colors, numbers, simple objects.\n"
+            "  → Question stems: SHORT — max 10 words.\n"
+            "  → Options: 1–3 words each, concrete nouns or numbers.\n"
+            "  → FORBIDDEN: questions about the subject itself (e.g. 'How many\n"
+            "    people speak Bengali?' or 'What is a dialect?')\n"
+            "  → FORBIDDEN: abstract concepts, statistics, history of language.\n"
+            "  → EXAMPLE good question (Bengali): 'বাংলা বর্ণমালায় স্বরবর্ণ কয়টি?'\n"
+            "    Options: ৯, ১০, ১১ ✓, ১২  ← simple, from textbook."
+        )
+    elif cls <= 4:
+        return (
+            "AGE CALIBRATION (Class 3–4, age 8–9):\n"
+            "  → difficulty: 'easy' and 'medium' only — no hard\n"
+            "  → bloom_level: 'remember' and 'understand' only\n"
+            "  → Questions must be about textbook content — definitions,\n"
+            "    simple grammar rules, short poem lines, basic concepts.\n"
+            "  → Options: short phrases, max 8 words each.\n"
+            "  → FORBIDDEN: analysis, statistics, meta-questions about the subject."
+        )
+    elif cls <= 6:
+        return (
+            "AGE CALIBRATION (Class 5–6, age 10–11):\n"
+            "  → difficulty: easy / medium mix\n"
+            "  → bloom_level: remember / understand / apply\n"
+            "  → Questions may include simple application scenarios.\n"
+            "  → No 'hard' difficulty or 'analyze' bloom level."
+        )
+    elif cls <= 8:
+        return (
+            "AGE CALIBRATION (Class 7–8, age 12–13):\n"
+            "  → difficulty: easy / medium / hard mix (30/50/20)\n"
+            "  → bloom_level: remember / understand / apply / analyze\n"
+            "  → Include application-based and reasoning questions."
+        )
+    else:
+        return (
+            "AGE CALIBRATION (Class 9–12, age 14–18):\n"
+            "  → difficulty: 30% easy, 50% medium, 20% hard\n"
+            "  → bloom_level: full range including analyze\n"
+            "  → At least 2 MCQs at apply or analyze Bloom level.\n"
+            "  → Distractors must be plausible to a well-prepared student."
+        )
+
+
 # ── Prompt builders ───────────────────────────────────────────────────────────
 
 def _build_user_prompt(report: ValidationReport) -> str:
@@ -82,6 +157,9 @@ def _build_user_prompt(report: ValidationReport) -> str:
 INPUT:
   taxonomy_label:  {taxonomy.label}
   segment:         {taxonomy.segment.value}
+  board:           {taxonomy.board or 'N/A'}
+  class_num:       {taxonomy.class_num or 'N/A'}
+  subject:         {taxonomy.subject or 'N/A'}
   mcq_count:       {taxonomy.count}
 
 VALIDATED CONTENT:
@@ -91,10 +169,16 @@ VALIDATED CONTENT:
   definitions: {extract.definitions}
 {corrections_note}
 
+─────────────────────────────────────────────────────────────────────────────
+{_language_instruction(taxonomy)}
+
+{_age_calibration(taxonomy)}
+─────────────────────────────────────────────────────────────────────────────
+
 OUTPUT REQUIREMENTS (DSPy-style explicit constraints):
 
 notes (exactly 1 StudyNote):
-  topic_title:     exact topic name
+  topic_title:     exact topic name (in output language)
   summary:         2-3 sentence crisp summary — no fluff, no padding
   key_concepts:    list of named concepts
   formulas:        list of formulas (empty list if none)
@@ -103,23 +187,21 @@ notes (exactly 1 StudyNote):
   memory_hooks:    list of mnemonics or analogies (empty list if none)
 
 mcqs (exactly {taxonomy.count} MCQItem):
-  question:          clear, unambiguous question stem
-  options:           A/B/C/D — each distractor must be plausible to a weak student
+  question:          clear, unambiguous question stem (in output language)
+  options:           A/B/C/D in output language — each distractor plausible
   correct:           single letter A | B | C | D
-  reasoning_process: step-by-step walkthrough — WHY A fails, WHY B is correct,
-                     WHY C fails, WHY D fails — address ALL 4 options explicitly
-  explanation:       1-sentence plain-language summary of the correct answer
-  difficulty:        "easy" | "medium" | "hard"
-  bloom_level:       "remember" | "understand" | "apply" | "analyze"
-  topic_tag:         exact sub-topic this question tests
+  reasoning_process: WHY A fails, WHY B is correct, WHY C fails, WHY D fails
+  explanation:       1-sentence plain-language summary (in output language)
+  difficulty:        see AGE CALIBRATION above for allowed values
+  bloom_level:       see AGE CALIBRATION above for allowed values
+  topic_tag:         exact sub-topic (in output language)
 
 MCQ QUALITY RULES (সারং ততো গ্রাহ্যম্):
   - Each distractor must be plausible — a weak student should be genuinely confused
   - No "all of the above" or "none of the above"
   - reasoning_process MUST explain why each wrong option is wrong
-  - Mix: ~30% easy, ~50% medium, ~20% hard
-  - At least 2 MCQs at apply or analyze Bloom level
   - Every formula used as a distractor must be a real (but wrong-context) formula
+  - Questions must be about content FROM THE LESSON — not about the subject itself
 """.strip()
 
 
