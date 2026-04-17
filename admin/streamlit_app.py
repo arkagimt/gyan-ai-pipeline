@@ -988,9 +988,12 @@ def _approve_item(db: Client, row: dict, data_type: str):
     )
 
     # Common fields present in BOTH tables
+    # hierarchy_node_id → FK to exam_hierarchy (nullable) → None
+    # region_id         → FK to regions table (nullable) → None
+    #                     "wb"/"global" are NOT valid FK values
     _common = {
-        "hierarchy_node_id": None,   # FK to exam_hierarchy — nullable
-        "region_id":         region,
+        "hierarchy_node_id": None,
+        "region_id":         None,
         "subject_or_topic":  subject,
         "probability_score": score,
         "verified_by_human": True,
