@@ -200,13 +200,32 @@ def run(taxonomy: TaxonomySlice, force: bool = False) -> PipelineResult:
         return PipelineResult(errors=1, elapsed_s=round(time.time() - start, 2))
 
     # ── সূত্রধর — Generate ────────────────────────────────────────────────────
-    emit_progress(f"Step 4/4 — সূত্রধর generating study material")
+    emit_progress(f"Step 4/5 — সূত্রধর generating study material")
     from agents import sutradhar
     try:
         package = sutradhar.run(report)
     except Exception as e:
         emit_error(f"সূত্রধর failed: {e}")
         return PipelineResult(errors=1, elapsed_s=round(time.time() - start, 2))
+
+    # ── ধর্মরক্ষক — Safety gate ────────────────────────────────────────────────
+    emit_progress(f"Step 5/5 — ধর্মরক্ষক safety check")
+    from agents import dharmarakshak
+    try:
+        safe_mcqs, audit_log = dharmarakshak.check_package(
+            package.mcqs, package.notes, taxonomy
+        )
+        if audit_log:
+            for entry in audit_log:
+                emit_progress(f"[safety] {entry}")
+        # Replace MCQ list with safety-cleared subset
+        package = package.model_copy(update={"mcqs": safe_mcqs})
+        if not safe_mcqs and not package.notes:
+            emit_error("ধর্মরক্ষক blocked all content — nothing to push")
+            return PipelineResult(errors=1, elapsed_s=round(time.time() - start, 2))
+    except Exception as e:
+        emit_progress(f"[ধর্মরক্ষক] Safety check error (non-blocking): {e}")
+        # Never let safety check crash the pipeline — content goes to human triage
 
     # ── Push to Supabase ──────────────────────────────────────────────────────
     emit_progress("Pushing to Supabase ingestion_triage_queue")
