@@ -988,9 +988,9 @@ def _approve_item(db: Client, row: dict, data_type: str):
         "question_payload":  raw  if data_type == "pyq"      else None,
         "data_payload":      raw  if data_type == "material"  else None,
         "probability_score": score,
+        "ai_accuracy_score": score,
+        "validation_flags":  row.get("validation_flags") or [],
         "verified_by_human": True,
-        # NOTE: ai_accuracy_score + validation_flags excluded —
-        # run scripts/schema_segment_ingestion.sql ALTER TABLE to add them
     }
 
     try:
