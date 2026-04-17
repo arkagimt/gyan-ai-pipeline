@@ -1,5 +1,9 @@
+# Secrets & local config
 .env
 .env.*
+!.env.example
+
+# Python artifacts
 __pycache__/
 *.pyc
 *.pyo
@@ -8,7 +12,16 @@ venv/
 *.egg-info/
 dist/
 build/
+
+# OS
 .DS_Store
+
+# Data files (never commit raw data)
 *.pdf
 *.tmp
 raw_dumps/
+
+# Private roadmap / internal notes (keep in Notion/private docs)
+ROADMAP_PRIVATE.md
+NOTES_PRIVATE.md
+docs/private/

@@ -1,0 +1,23 @@
+Copyright (c) 2025–present Arka Ghosh / Gyan AI
+
+PROPRIETARY AND CONFIDENTIAL
+
+All rights reserved.
+
+This source code and all associated files are the exclusive property of
+Arka Ghosh ("Owner"). Viewing this code on GitHub is permitted for
+reference and educational purposes only.
+
+You MAY NOT:
+  - Copy, reproduce, or redistribute this code in whole or in part
+  - Use this code or any derivative work in a commercial product or service
+  - Deploy this code to production without explicit written permission from the Owner
+  - Remove or alter this copyright notice
+
+This code is made public solely to enable:
+  - GitHub Actions free CI/CD minutes (requires public repository)
+  - Streamlit Community Cloud deployment (requires public repository)
+
+For licensing inquiries: [your email]
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
