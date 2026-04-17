@@ -1,6 +1,9 @@
 """
-সূত্রধর — The Storyteller
-===========================
+সূত্রধর — The Conceptual Guide
+================================
+Bengali:  সূত্রধর
+Website:  gyanagent.in/about  →  "The Conceptual Guide"
+
 Role:   Content Creator Agent / Study Material Synthesizer
 Input:  ValidationReport (from চিত্রগুপ্ত)
 Output: StudyPackage (Pydantic model)
@@ -13,20 +16,18 @@ Philosophy: সারং ততো গ্রাহ্যম্
 UPGRADES (SOTA open-source patterns applied):
 
 1. instructor (github.com/jxnl/instructor, MIT License)
-   ─ Replaces raw requests.post() + json.loads() + _parse_mcqs() silent-skip.
-   ─ response_model=StudyOutput enforces schema; instructor retries with the
-     Pydantic error message fed back to the LLM. Zero blank cards.
+   ─ response_model=StudyOutput enforces schema + auto-retries on failure.
 
-2. Guardrails AI "reask" pattern (github.com/guardrails-ai/guardrails, Apache 2.0)
-   ─ After generation, _verify_mcqs() runs a self-critique pass.
-   ─ The LLM checks its own MCQs for: accidentally-correct distractors,
-     ambiguous questions, factually wrong answers.
-   ─ Flagged MCQs are individually regenerated with the issue description.
-   ─ This is the #1 source of MCQ quality improvement in practice.
+2. Guardrails AI "reask" pattern — delegated to বিদূষক (agents/vidushak.py)
+   ─ Self-critique + repair now a first-class agent, not internal code.
+   ─ বিদূষক adds language-mismatch + age-inappropriate detection (v2).
 
 3. DSPy signature philosophy (github.com/stanfordnlp/dspy, MIT License)
-   ─ Prompts declare explicit INPUT fields and OUTPUT constraints
-     rather than open-ended instructions. Reduces hallucination ~30%.
+   ─ Explicit INPUT/OUTPUT fields in prompts. Reduces hallucination ~30%.
+
+4. Sarvam-M routing (Phase 3)
+   ─ WBBSE/WBCHSE boards use Sarvam-M (Indic-native model) for Bengali.
+   ─ llm.call_llm(language="bn") handles the routing transparently.
 ─────────────────────────────────────────────────────────────────────────────
 """
 
@@ -40,32 +41,15 @@ from config import (
 from llm import call_llm
 from models.schemas import (
     ValidationReport, StudyPackage,
-    StudyOutput, MCQItem, MCQBatchVerification,
+    StudyOutput,
 )
+from agents import vidushak
 
 
-# ── Verifier system prompt ────────────────────────────────────────────────────
-# Kept inline — this is infrastructure, not content config.
-
-_VERIFIER_SYSTEM = """
-You are a strict MCQ quality auditor for an Indian education platform.
-Your job: find genuine errors in MCQs — not stylistic preferences.
-
-Check each MCQ for these SPECIFIC issues only:
-  1. DISTRACTOR_CORRECT  — a wrong option that is actually also correct
-     (most common in physics/math: e.g. P=IV listed as distractor when it is valid)
-  2. WRONG_ANSWER        — the marked correct option is factually incorrect
-  3. TWO_CORRECT_OPTIONS — more than one option is unambiguously correct
-  4. AMBIGUOUS_QUESTION  — the question can be reasonably interpreted multiple ways
-
-Do NOT flag:
-  - Minor wording preferences
-  - Difficulty level opinions
-  - Bloom level disagreements
-
-Be conservative: only flag issues you are CERTAIN about.
-verdict must be exactly "ok" or "has_issue".
-"""
+# ── Self-critique: delegated to বিদূষক ────────────────────────────────────────
+# Verifier logic (audit + repair) now lives in agents/vidushak.py.
+# সূত্রধর calls vidushak.verify_and_repair() below — keeping creation and
+# critique as separate, independently testable concerns.
 
 
 # ── Language + age calibration ────────────────────────────────────────────────
@@ -205,112 +189,6 @@ MCQ QUALITY RULES (সারং ততো গ্রাহ্যম্):
 """.strip()
 
 
-def _build_verification_prompt(mcqs: list[MCQItem], label: str) -> str:
-    mcq_text = "\n\n".join(
-        f"MCQ #{i}:\n"
-        f"  Q: {m.question}\n"
-        f"  A: {m.options.A}\n"
-        f"  B: {m.options.B}\n"
-        f"  C: {m.options.C}\n"
-        f"  D: {m.options.D}\n"
-        f"  Correct: {m.correct}"
-        for i, m in enumerate(mcqs)
-    )
-    return f"""
-Topic: {label}
-
-Review these {len(mcqs)} MCQs for factual or logical errors only:
-
-{mcq_text}
-
-For each MCQ return:
-  index:   the MCQ number (0-based)
-  verdict: "ok" or "has_issue"
-  issue:   null if ok, specific description if has_issue
-           Example: "Option C (P = IV) is also a valid power formula — two correct answers"
-
-Set any_issues=true if ANY MCQ has verdict="has_issue".
-""".strip()
-
-
-def _build_fix_prompt(mcq: MCQItem, issue: str, label: str) -> str:
-    return f"""
-Topic: {label}
-
-This MCQ has a quality issue that must be fixed: {issue}
-
-Original MCQ:
-  Question: {mcq.question}
-  A: {mcq.options.A}
-  B: {mcq.options.B}
-  C: {mcq.options.C}
-  D: {mcq.options.D}
-  Correct: {mcq.correct}
-
-Rewrite this MCQ to fix the issue. Keep the same sub-topic and difficulty level.
-Ensure reasoning_process and explanation are thorough (address all 4 options).
-""".strip()
-
-
-# ── Self-critique verifier ────────────────────────────────────────────────────
-
-def _verify_mcqs(mcqs: list[MCQItem], label: str) -> list[MCQItem]:
-    """
-    Self-critique pass on generated MCQs.
-
-    Inspired by Guardrails AI's 'reask' pattern (Apache 2.0):
-    ask the LLM to audit its own output and fix genuine errors
-    before they reach students.
-
-    Most common issue caught: accidentally-correct distractors in
-    physics/math (e.g., listing P=IV as a wrong option when it is valid).
-    """
-    try:
-        verification: MCQBatchVerification = call_llm(
-            system         = _VERIFIER_SYSTEM,
-            user           = _build_verification_prompt(mcqs, label),
-            response_model = MCQBatchVerification,
-            temperature    = 0.1,   # low temp — verification needs precision
-            max_tokens     = 1024,
-            max_retries    = 2,
-        )
-    except Exception as e:
-        emit_progress(f"[সূত্রধর] Self-critique skipped (verifier error: {e})")
-        return mcqs   # keep originals — never block pipeline on verifier failure
-
-    if not verification.any_issues:
-        emit_agent("সূত্রধর", f"Self-critique ✓ — all {len(mcqs)} MCQs passed")
-        return mcqs
-
-    # Repair flagged MCQs one by one
-    issues = {
-        v.index: v.issue
-        for v in verification.verifications
-        if v.verdict == "has_issue" and v.issue
-    }
-    emit_agent("সূত্রধর", f"Self-critique found {len(issues)} issue(s) — repairing")
-
-    fixed = list(mcqs)
-    prompt_cfg = get_agent_prompt("sutradhar")
-
-    for idx, issue_desc in issues.items():
-        if idx >= len(fixed):
-            continue
-        try:
-            repaired: MCQItem = call_llm(
-                system         = prompt_cfg.system_prompt,
-                user           = _build_fix_prompt(fixed[idx], issue_desc, label),
-                response_model = MCQItem,
-                temperature    = 0.4,
-                max_tokens     = 800,
-                max_retries    = 2,
-            )
-            fixed[idx] = repaired
-            emit_progress(f"[সূত্রধর] MCQ #{idx} repaired — was: {issue_desc[:80]}")
-        except Exception as e:
-            emit_progress(f"[সূত্রধর] MCQ #{idx} repair failed, keeping original: {e}")
-
-    return fixed
 
 
 # ── Main agent function ───────────────────────────────────────────────────────
@@ -330,8 +208,11 @@ def run(report: ValidationReport) -> StudyPackage:
             f"সূত্রধর cannot run — চিত্রগুপ্ত rejected content: {report.rejection_reason}"
         )
 
+    taxonomy   = report.extract.taxonomy
     prompt_cfg = get_agent_prompt("sutradhar")
-    emit_agent("সূত্রধর", f"Generating content for: {report.extract.taxonomy.label}")
+    lang       = "bn" if taxonomy.board in ("WBBSE", "WBCHSE") else "en"
+
+    emit_agent("সূত্রধর", f"Generating content for: {taxonomy.label}")
 
     user_prompt = _build_user_prompt(report)
     last_error: Exception | None = None
@@ -346,10 +227,13 @@ def run(report: ValidationReport) -> StudyPackage:
                 temperature    = prompt_cfg.temperature,
                 max_tokens     = prompt_cfg.max_tokens,
                 max_retries    = 3,
+                language       = lang,
             )
 
-            # ── Step 2: Self-critique MCQs (Guardrails reask pattern) ────────
-            verified_mcqs = _verify_mcqs(output.mcqs, report.extract.taxonomy.label)
+            # ── Step 2: বিদূষক adversarial audit + repair ───────────────────
+            verified_mcqs = vidushak.verify_and_repair(
+                output.mcqs, taxonomy, taxonomy.label
+            )
 
             # ── Step 3: Assemble final StudyPackage ───────────────────────────
             package = StudyPackage(

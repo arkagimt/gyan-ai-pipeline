@@ -1,7 +1,14 @@
 """
-চিত্রগুপ্ত — The Record Keeper
-================================
-Role:   Triage Agent / Quality Verification Engine
+চিত্রগুপ্ত — The Quality Gatekeeper
+======================================
+Bengali:  চিত্রগুপ্ত
+Website:  gyanagent.in/about  →  "The Quality Gatekeeper"
+          "অ্যাডমিন ট্রায়াজ আমার দায়িত্ব। প্রতিটি কনটেন্ট ডাটাবেজে যাওয়ার
+           আগে আমার কাছে রিভিউ হয়।"
+
+Role:   Pre-generation content validator + admin triage gatekeeper
+        (1) Code face: validates সর্বজ্ঞ's extract before Sutradhar generates
+        (2) Admin face: all content reviewed in Streamlit triage before DB promotion
 Input:  RawExtract (from সর্বজ্ঞ)
 Output: ValidationReport (Pydantic model)
 

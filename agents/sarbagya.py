@@ -1,6 +1,9 @@
 """
-সর্বজ্ঞ — The All-Knowing Scout
-=================================
+সর্বজ্ঞ — The Scout & Ingestor
+================================
+Bengali:  সর্বজ্ঞ
+Website:  gyanagent.in/about  →  "The Scout & Ingestor"
+
 Role:   Scout Agent / Knowledge Extractor
 Input:  TaxonomySlice + optional raw_text (from PDF or URL)
 Output: RawExtract (Pydantic model)
@@ -71,6 +74,7 @@ def run(taxonomy: TaxonomySlice, raw_text: str = "") -> RawExtract:
     prompt_cfg = get_agent_prompt("sarbagya")
     emit_agent("সর্বজ্ঞ", f"Extracting content for: {taxonomy.label}")
 
+    lang        = "bn" if taxonomy.board in ("WBBSE", "WBCHSE") else "en"
     user_prompt = _build_user_prompt(taxonomy, raw_text)
     last_error: Exception | None = None
 
@@ -82,7 +86,8 @@ def run(taxonomy: TaxonomySlice, raw_text: str = "") -> RawExtract:
                 response_model = ExtractOutput,
                 temperature    = prompt_cfg.temperature,
                 max_tokens     = prompt_cfg.max_tokens,
-                max_retries    = 3,   # instructor inner retries for schema validation
+                max_retries    = 3,
+                language       = lang,
             )
 
             extract = RawExtract(
