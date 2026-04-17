@@ -212,14 +212,26 @@ def run(taxonomy: TaxonomySlice, force: bool = False) -> PipelineResult:
     emit_progress(f"Step 5/5 — ধর্মরক্ষক safety check")
     from agents import dharmarakshak
     try:
+        before_count        = len(package.mcqs)
         safe_mcqs, audit_log = dharmarakshak.check_package(
             package.mcqs, package.notes, taxonomy
         )
         if audit_log:
             for entry in audit_log:
                 emit_progress(f"[safety] {entry}")
-        # Replace MCQ list with safety-cleared subset
-        package = package.model_copy(update={"mcqs": safe_mcqs})
+
+        # Persist audit to package metadata → flows through to ingestion_triage_queue
+        # so admins can see *why* items were blocked/flagged, not just that they were.
+        new_metadata = dict(package.metadata or {})
+        new_metadata["safety_audit"] = {
+            "mcqs_before":   before_count,
+            "mcqs_after":    len(safe_mcqs),
+            "blocked_count": before_count - len(safe_mcqs),
+            "entries":       audit_log,
+            "guard_model":   dharmarakshak.GROQ_GUARD_MODEL if hasattr(dharmarakshak, "GROQ_GUARD_MODEL") else None,
+        }
+        package = package.model_copy(update={"mcqs": safe_mcqs, "metadata": new_metadata})
+
         if not safe_mcqs and not package.notes:
             emit_error("ধর্মরক্ষক blocked all content — nothing to push")
             return PipelineResult(errors=1, elapsed_s=round(time.time() - start, 2))

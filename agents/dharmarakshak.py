@@ -41,6 +41,10 @@ from groq import Groq
 from config import GROQ_API_KEY, GROQ_GUARD_MODEL, emit_agent, emit_progress
 from models.schemas import TaxonomySlice, MCQItem, StudyNote
 
+# Re-exported for `gyan_pipeline.py`'s audit-log metadata (records *which*
+# guard model made the safety call — important when Groq eventually renames it).
+__all__ = ["check_package", "check_mcq", "SafetyResult", "GROQ_GUARD_MODEL"]
+
 
 # ── Policy ────────────────────────────────────────────────────────────────────
 

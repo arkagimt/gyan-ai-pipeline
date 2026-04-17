@@ -86,6 +86,13 @@ class ValidationFlag(str, Enum):
     hallucination_risk   = "hallucination_risk"
     incomplete_content   = "incomplete_content"
     formula_error        = "formula_error"
+    # ── Phase-2 additions (Vidushak v1) ─────────────────────────────────────
+    language_mismatch    = "language_mismatch"     # Bengali board but English output (or vice versa)
+    age_inappropriate    = "age_inappropriate"     # vocab/complexity wrong for target class
+    source_disconnect    = "source_disconnect"     # MCQ not grounded in Sarbagya's extract
+    # ── Phase-5 additions (Dharmarakshak safety) ─────────────────────────────
+    safety_violation     = "safety_violation"      # Llama Guard 3 blocked (S1/S4/S10/S11/S12/S13)
+    safety_review        = "safety_review"         # Llama Guard 3 flagged (S8) or heuristic flag
     passed               = "passed"
 
 class ValidationReport(BaseModel):

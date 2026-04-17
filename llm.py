@@ -59,18 +59,46 @@ def _setup_tracing() -> None:
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
         from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
         from opentelemetry.sdk.trace import TracerProvider
-        from openinference.instrumentation.groq import GroqInstrumentor
 
         provider = TracerProvider()
         provider.add_span_processor(
             BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{PHOENIX_ENDPOINT}/v1/traces"))
         )
-        GroqInstrumentor().instrument(tracer_provider=provider)
-        emit_progress(f"[tracing] 🔭 Phoenix observability active → {PHOENIX_ENDPOINT}")
+
+        # Groq instrumentation (default LLM + Llama Guard 3 safety calls)
+        instrumented: list[str] = []
+        try:
+            from openinference.instrumentation.groq import GroqInstrumentor
+            GroqInstrumentor().instrument(tracer_provider=provider)
+            instrumented.append("groq")
+        except ImportError:
+            pass
+
+        # OpenAI instrumentation covers Sarvam-M (Bengali routing uses the
+        # OpenAI-compatible client against api.sarvam.ai/v1). Without this,
+        # the entire Bengali traffic — the whole point of Sarvam — is invisible.
+        try:
+            from openinference.instrumentation.openai import OpenAIInstrumentor
+            OpenAIInstrumentor().instrument(tracer_provider=provider)
+            instrumented.append("openai/sarvam")
+        except ImportError:
+            pass
+
+        if instrumented:
+            emit_progress(
+                f"[tracing] 🔭 Phoenix active → {PHOENIX_ENDPOINT} "
+                f"(instrumented: {', '.join(instrumented)})"
+            )
+        else:
+            emit_progress(
+                "[tracing] Phoenix endpoint set but no instrumentors installed — skipping. "
+                "Install: pip install openinference-instrumentation-groq openinference-instrumentation-openai"
+            )
     except ImportError:
         emit_progress(
             "[tracing] Phoenix deps not installed — skipping. "
-            "To enable: pip install arize-phoenix-otel openinference-instrumentation-groq"
+            "To enable: pip install arize-phoenix-otel "
+            "openinference-instrumentation-groq openinference-instrumentation-openai"
         )
 
 

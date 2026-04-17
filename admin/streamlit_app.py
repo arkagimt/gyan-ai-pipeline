@@ -83,238 +83,7 @@ from curriculum import (
     CURRICULUM, CLASS_PRIORITY, COMPETITIVE_TREE, IT_TREE,
 )
 
-# ── LEGACY INLINE DATA (kept as emergency fallback — remove after v3 deploy) ──
-_LEGACY_CURRICULUM: dict[str, dict[int, list[str]]] = {
-    "WBBSE": {
-        1:  ["Bengali", "English", "Mathematics"],
-        2:  ["Bengali", "English", "Mathematics"],
-        3:  ["Bengali", "English", "Mathematics", "Paribesh O Parichiti"],
-        4:  ["Bengali", "English", "Mathematics", "Paribesh O Parichiti"],
-        5:  ["Bengali", "English", "Mathematics", "Paribesh O Parichiti"],
-        6:  ["Bengali", "English", "Mathematics", "History", "Geography", "Life Science"],
-        7:  ["Bengali", "English", "Mathematics", "History", "Geography", "Life Science"],
-        8:  ["Bengali", "English", "Mathematics", "History", "Geography",
-             "Life Science", "Physical Science"],
-        9:  ["Bengali", "English", "Mathematics", "History", "Geography",
-             "Life Science", "Physical Science"],
-        10: ["Bengali", "English", "Mathematics", "History", "Geography",
-             "Life Science", "Physical Science"],
-    },
-    "WBCHSE": {
-        11: ["Bengali", "English", "Mathematics", "Physics", "Chemistry",
-             "Biology", "History", "Geography", "Economics",
-             "Accountancy", "Business Studies"],
-        12: ["Bengali", "English", "Mathematics", "Physics", "Chemistry",
-             "Biology", "History", "Geography", "Economics",
-             "Accountancy", "Business Studies"],
-    },
-    "CBSE": {
-        1:  ["English", "Hindi", "Mathematics", "Environmental Studies"],
-        2:  ["English", "Hindi", "Mathematics", "Environmental Studies"],
-        3:  ["English", "Hindi", "Mathematics", "Environmental Studies"],
-        4:  ["English", "Hindi", "Mathematics", "Environmental Studies"],
-        5:  ["English", "Hindi", "Mathematics", "Environmental Studies"],
-        6:  ["English", "Hindi", "Mathematics", "Science", "Social Science"],
-        7:  ["English", "Hindi", "Mathematics", "Science", "Social Science"],
-        8:  ["English", "Hindi", "Mathematics", "Science", "Social Science"],
-        9:  ["English", "Hindi", "Mathematics", "Science", "Social Science"],
-        10: ["English", "Hindi", "Mathematics", "Science", "Social Science"],
-        11: ["Physics", "Chemistry", "Mathematics", "Biology", "English",
-             "Economics", "Accountancy", "Business Studies"],
-        12: ["Physics", "Chemistry", "Mathematics", "Biology", "English",
-             "Economics", "Accountancy", "Business Studies"],
-    },
-    "ICSE": {
-        1:  ["English", "Mathematics", "Environmental Education"],
-        2:  ["English", "Mathematics", "Environmental Education"],
-        3:  ["English", "Mathematics", "Environmental Education"],
-        4:  ["English", "Mathematics", "Environmental Education"],
-        5:  ["English", "Mathematics", "Environmental Education"],
-        6:  ["English", "Mathematics", "Science", "Social Studies"],
-        7:  ["English", "Mathematics", "Science", "Social Studies"],
-        8:  ["English", "Mathematics", "Science", "History & Civics", "Geography"],
-        9:  ["English", "Mathematics", "Physics", "Chemistry", "Biology",
-             "History & Civics", "Geography"],
-        10: ["English", "Mathematics", "Physics", "Chemistry", "Biology",
-             "History & Civics", "Geography"],
-    },
-}
-
-# Higher = more important to fill first
-CLASS_PRIORITY: dict[int, int] = {
-    10: 10, 12: 9, 9: 8, 11: 7, 8: 6, 7: 5, 6: 4, 5: 3, 4: 2, 3: 2, 2: 1, 1: 1,
-}
-
-COMPETITIVE_TREE: dict[str, dict[str, list[str]]] = {
-    "WBPSC": {
-        "WBCS Prelims": [
-            "Indian History — Ancient & Medieval",
-            "Indian History — Modern & Independence Movement",
-            "West Bengal — History & Culture",
-            "Indian & WB Geography",
-            "Indian Constitution & Polity",
-            "Indian Economy & Planning",
-            "General Science — Physics",
-            "General Science — Chemistry",
-            "General Science — Biology",
-            "Environment & Ecology",
-            "Current Affairs & General Knowledge",
-            "Mathematics — Arithmetic & Reasoning",
-        ],
-        "WBCS Mains": [
-            "General Studies Paper I — History",
-            "General Studies Paper I — Geography",
-            "General Studies Paper II — Polity & Governance",
-            "General Studies Paper II — Economy",
-            "English Essay & Comprehension",
-            "Bengali Language & Literature",
-        ],
-        "Miscellaneous Services": [
-            "General Knowledge & Current Affairs",
-            "English Grammar",
-            "Bengali Grammar",
-            "Arithmetic & Numerical Ability",
-            "General Science",
-        ],
-    },
-    "SSC": {
-        "CGL (Tier 1)": [
-            "Quantitative Aptitude — Algebra",
-            "Quantitative Aptitude — Geometry",
-            "Quantitative Aptitude — Arithmetic",
-            "English — Comprehension & Grammar",
-            "General Intelligence & Reasoning",
-            "General Awareness — History",
-            "General Awareness — Geography",
-            "General Awareness — Polity",
-            "General Awareness — Economy",
-            "General Awareness — Science",
-        ],
-        "CHSL": [
-            "Quantitative Aptitude — Basic Maths",
-            "English — Grammar & Vocabulary",
-            "General Intelligence & Reasoning",
-            "General Awareness",
-        ],
-        "MTS": [
-            "Numerical Aptitude — Basic",
-            "General English",
-            "General Awareness — Basic",
-            "Reasoning — Non-Verbal",
-        ],
-    },
-    "UPSC": {
-        "Prelims (GS Paper 1)": [
-            "Ancient & Medieval Indian History",
-            "Modern Indian History",
-            "Indian & World Geography",
-            "Indian Polity & Constitution",
-            "Indian Economy",
-            "Environment & Ecology",
-            "Science & Technology",
-            "Current Affairs",
-        ],
-    },
-    "Railway": {
-        "NTPC": [
-            "Mathematics — Arithmetic",
-            "General Intelligence & Reasoning",
-            "General Awareness — Static GK",
-            "General Awareness — Current Affairs",
-            "English Grammar",
-        ],
-        "Group D": [
-            "Mathematics — Basic",
-            "General Science — Physics & Chemistry",
-            "General Science — Biology",
-            "General Awareness",
-            "Reasoning — Basic",
-        ],
-    },
-    "WBSSC": {
-        "TET (Primary)": [
-            "Child Development & Pedagogy",
-            "Language I — Bengali",
-            "Language II — English",
-            "Mathematics — Primary Level",
-            "Environmental Studies — Primary",
-        ],
-        "SLST": [
-            "Subject Knowledge — Core",
-            "Pedagogy & Teaching Methods",
-            "General Studies & Current Affairs",
-        ],
-    },
-}
-
-IT_TREE: dict[str, dict[str, list[str]]] = {
-    "AWS": {
-        "Cloud Practitioner (CLF-C02)": [
-            "Cloud Concepts & Value Proposition",
-            "AWS Global Infrastructure",
-            "Core Services — EC2 & Compute",
-            "Core Services — S3 & Storage",
-            "Core Services — RDS & Databases",
-            "Core Services — VPC & Networking",
-            "Security — IAM & Shared Responsibility",
-            "Security — AWS Security Services",
-            "Cloud Economics & Pricing",
-            "AWS Billing & Cost Management",
-        ],
-        "Solutions Architect Associate (SAA-C03)": [
-            "Resilient Architectures",
-            "High-Performance Architectures",
-            "Secure Architectures",
-            "Cost-Optimized Architectures",
-        ],
-        "Developer Associate (DVA-C02)": [
-            "Development with AWS Services",
-            "Security in AWS Applications",
-            "Deployment & Testing",
-            "Refactoring & Monitoring",
-        ],
-    },
-    "Microsoft": {
-        "Azure Fundamentals (AZ-900)": [
-            "Cloud Concepts",
-            "Azure Architecture & Services",
-            "Azure Management & Governance",
-        ],
-        "Azure Administrator (AZ-104)": [
-            "Manage Azure Identities & Governance",
-            "Implement & Manage Storage",
-            "Deploy & Manage Compute Resources",
-            "Implement Virtual Networking",
-            "Monitor & Backup Azure Resources",
-        ],
-    },
-    "Google": {
-        "Cloud Digital Leader": [
-            "Digital Transformation with Google Cloud",
-            "Innovating with Data & AI",
-            "Infrastructure & App Modernisation",
-            "Google Cloud Security & Operations",
-        ],
-        "Associate Cloud Engineer": [
-            "Setting up Cloud Environment",
-            "Planning & Configuring Cloud Solution",
-            "Deploying & Implementing Cloud Solution",
-            "Configuring Access & Security",
-        ],
-    },
-    "Cisco": {
-        "CCNA (200-301)": [
-            "Network Fundamentals",
-            "Network Access — VLANs & Trunking",
-            "IP Connectivity — Routing Protocols",
-            "IP Services — DHCP, DNS, NAT",
-            "Security Fundamentals",
-            "Automation & Programmability",
-        ],
-    },
-}
-
-# ── End legacy data block ─────────────────────────────────────────────────────
+# Legacy inline curriculum block removed — canonical source is curriculum.py
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HELPERS
@@ -394,24 +163,32 @@ def _cache_key() -> str:
 
 
 def get_recommendations(coverage: dict, limit: int = 10) -> list[dict]:
-    """Top-N school curriculum nodes with fewest MCQs, ranked by class priority."""
-    recs = []
-    for board, classes in CURRICULUM.items():
-        for class_num, subjects in classes.items():
-            priority = CLASS_PRIORITY.get(class_num, 1)
-            for subject in subjects:
-                count = coverage.get((board, class_num, subject), 0)
-                recs.append({
-                    "board":     board,
-                    "class_num": class_num,
-                    "subject":   subject,
-                    "count":     count,
-                    "priority":  priority,
-                    "label":     f"{board} · Class {class_num} · {subject}",
-                })
-    # 0 MCQ nodes first, then lowest count, then highest class priority
-    recs.sort(key=lambda x: (x["count"] > 0, -x["priority"], x["count"]))
-    return recs[:limit]
+    """
+    Top-N school curriculum nodes with fewest MCQs.
+    Delegates scoring to গণক (agents/ganak.py) — the canonical Analyst persona.
+    Admin UI stays a thin view layer over the agent's output so Ganak's logic
+    can also drive batch-mode pipeline runs (Phase 6 agents/acharya.py).
+    """
+    from agents import ganak
+
+    priorities = ganak.analyze(
+        coverage        = coverage,
+        segment_filter  = "school",
+        top_n           = limit,
+    )
+    return [
+        {
+            "board":     p.board,
+            "class_num": p.class_num,
+            "subject":   p.subject,
+            "count":     p.current_mcqs,
+            "priority":  p.priority_score,
+            "gap":       p.gap,
+            "reason":    p.reason,
+            "label":     f"{p.board} · Class {p.class_num} · {p.subject}",
+        }
+        for p in priorities
+    ]
 
 
 def _dispatch_workflow(workflow: str, inputs: dict):
@@ -597,8 +374,8 @@ def page_command_centre():
             col_p.progress(pct, text=f"{covered}/{total} nodes  ({pct:.0%})")
 
     with col_right:
-        st.subheader("🎯 Top Recommendations")
-        st.caption("Highest-priority nodes with fewest MCQs")
+        st.subheader("🎯 গণক — Topic Priorities")
+        st.caption("Ranked by Ganak (gap × class weight × board weight)")
 
         recs = get_recommendations(coverage, limit=8)
         for rec in recs:
@@ -606,7 +383,14 @@ def page_command_centre():
             icon  = "🔴" if count == 0 else "🟡"
             cols  = st.columns([5, 2])
             with cols[0]:
-                st.markdown(f"{icon} **{rec['label']}**  \n`{count} MCQs`")
+                reason_line = rec.get("reason", "")
+                score       = rec.get("priority", 0)
+                st.markdown(
+                    f"{icon} **{rec['label']}**  \n"
+                    f"`{count} MCQs`  ·  score `{score:.0f}`  \n"
+                    f"<sub>{reason_line}</sub>",
+                    unsafe_allow_html=True,
+                )
             with cols[1]:
                 if st.button("▶ Run", key=f"rec_{rec['board']}_{rec['class_num']}_{rec['subject']}"):
                     st.session_state["prefill"] = {

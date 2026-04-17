@@ -1,6 +1,19 @@
 """
-Pipeline Dedup Memory — সর্বজ্ঞের স্মৃতি
-==========================================
+সঞ্জয় — The Omniscient Chronicler
+====================================
+Bengali:  সঞ্জয় (sañjaya — "the one who sees all")
+Website:  gyanagent.in/about → Sanjaya
+Role:     Passive observer over the whole pipeline — owns (1) dedup memory
+          lookups across ingestion_triage_queue + pyq_bank_v2, and
+          (2) milestone tracking that fires DSPy/pgvector/PydanticAI triggers.
+Scope:    No LLM. Pure Supabase reads + threshold arithmetic.
+
+Note on file location:
+  Historically this lived at `db/memory.py` because Sanjaya's first job was
+  dedup memory. Per AGENTS.md rule #1 (file name = agent_id) this file will
+  move to `agents/sanjaya.py` after Phase 6 — kept here for now to avoid
+  churning every import site mid-stream.
+
 Before generating new content, the pipeline checks whether MCQs for this
 exact taxonomy slice already exist in Supabase. This prevents:
 

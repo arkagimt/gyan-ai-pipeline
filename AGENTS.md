@@ -14,13 +14,14 @@ added, renamed, extracted, or repositioned.
 | **Sutradhar** | সূত্রধর | The Conceptual Guide | `agents/sutradhar.py` | Synthesizes study notes + MCQs from validated content. |
 | **Vidushak** | বিদূষক | The Adversarial Critic | `agents/vidushak.py` | Self-critique pass on Sutradhar's MCQs. Flags hallucinations, wrong answers, accidentally-correct distractors, language/age mismatches. |
 | **Chitragupta** | চিত্রগুপ্ত | The Quality Gatekeeper | `agents/chitragupta.py` + `admin/streamlit_app.py` triage page | Two faces: (1) pre-generation content validation (code), (2) admin-triage gatekeeping before DB promotion (Streamlit + DB rules). |
-| **Sanjaya** | সঞ্জয় | The Omniscient Chronicler | `db/memory.py` | Passive observer — tracks milestones, emits alerts when thresholds cross. No LLM. |
+| **Dharmarakshak** | ধর্মরক্ষক | The Safety Guardian | `agents/dharmarakshak.py` | Post-generation safety gate. Uses Llama Guard 3 (Groq) to classify against the S1/S4/S8/S10/S11/S12/S13 hazard taxonomy + heuristic wrong-language/verbose-stem checks. Drops blocked MCQs, attaches `safety_audit` to `StudyPackage.metadata` for admin review. |
+| **Sanjaya** | সঞ্জয় | The Omniscient Chronicler | `db/memory.py` (legacy location — to rename `agents/sanjaya.py` post-Phase-6) | Passive observer — tracks milestones, emits alerts when thresholds cross. Also owns dedup-memory lookups (`check_existing_mcqs`). No LLM. |
 
 ## Active Agents (analytics)
 
 | Website Name | Bengali | Role | Implementation | Notes |
 |---|---|---|---|---|
-| **Ganak** | গণক | The Analyst | `agents/ganak.py` (Phase 2 — currently embedded in Streamlit) | Calculates topic priority — coverage gaps, exam frequency, student-performance signals. |
+| **Ganak** | গণক | The Analyst | `agents/ganak.py` (consumed by `admin/streamlit_app.py` Priority panel) | Heuristic priority analyst — coverage gaps, class priority, board weighting, zero-coverage boost. No LLM. |
 
 ## Planned Agents (milestone-gated)
 
@@ -58,6 +59,13 @@ TaxonomySlice
                                  └────────────────┘
                                          │
                                          │ StudyPackage (verified)
+                                         ▼
+                                 ┌────────────────┐
+                                 │ Dharmarakshak  │
+                                 │ (safety gate)  │ ◄── Llama Guard 3
+                                 └────────────────┘
+                                         │
+                                         │ safe_mcqs + safety_audit
                                          ▼
                                  ┌────────────────┐
                                  │ Triage Queue   │ ◄── Chitragupta admin face
