@@ -1,18 +1,19 @@
 """
-Gyan AI — Admin Control Room
-=============================
-Streamlit dashboard for the Gyan AI data pipeline.
+Gyan AI — Admin Command Centre v2
+===================================
+5-page Streamlit dashboard for the Gyan AI data pipeline.
 
 Pages:
-  📊 Dashboard       — live metrics + charts
-  🔍 Triage Queue    — approve / reject pending MCQs + study notes
-  🚀 Pipeline Control — trigger GitHub Actions ingestion workflows
-  🤖 Agent Prompts   — view / edit সর্বজ্ঞ, চিত্রগুপ্ত, সূত্রধর prompts
+  📊 Command Centre  — metrics, curriculum completion %, top recommendations
+  🗺️ Coverage Map    — board × class × subject heatmap, click-to-run pipeline
+  🔍 Triage Queue    — approve / reject MCQs + study notes (approval FK bug FIXED)
+  🚀 Smart Pipeline  — curriculum-aware trigger with coverage preview
+  🤖 Agent Prompts   — view / edit agent system prompts (Supabase Vault)
 
-Secrets required (set in Streamlit Cloud → App settings → Secrets):
+Secrets required (Streamlit Cloud → App settings → Secrets):
   SUPABASE_URL         = "https://xxx.supabase.co"
   SUPABASE_SERVICE_KEY = "eyJ..."
-  GITHUB_PAT           = "gho_..."
+  GITHUB_PAT           = "github_pat_..."
   GITHUB_REPO          = "arkagimt/gyan-ai-pipeline"
 """
 
@@ -26,109 +27,293 @@ import plotly.graph_objects as go
 from supabase import create_client, Client
 from datetime import datetime
 
-# ── Page Config ───────────────────────────────────────────────────────────────
+# ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Gyan AI — Control Room",
+    page_title="Gyan AI — Command Centre",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ── Style ─────────────────────────────────────────────────────────────────────
+# ── Global CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    [data-testid="stSidebar"] { background: #1a1a2e; min-width: 200px; }
-    [data-testid="stSidebar"] * { color: #e0e0e0 !important; }
-    .block-container { padding-top: 1.2rem; padding-left: 2rem; padding-right: 2rem; max-width: 1200px; }
-    div[data-testid="metric-container"] {
-        background: white;
-        border: 1px solid #e8e8e8;
-        border-radius: 10px;
-        padding: 0.8rem 1rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-    div[data-testid="metric-container"] label { font-size: 0.7rem !important; }
-    .stRadio > div { gap: 0.5rem; }
-    h1 { font-size: 1.6rem !important; }
-    h2 { font-size: 1.2rem !important; }
+  [data-testid="stSidebar"] { background: #1a1a2e; min-width: 210px; }
+  [data-testid="stSidebar"] * { color: #e0e0e0 !important; }
+  .block-container {
+    padding-top: 1.2rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    max-width: 1240px;
+  }
+  div[data-testid="metric-container"] {
+    background: white;
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  div[data-testid="metric-container"] label { font-size: 0.7rem !important; }
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.2rem !important; }
+  .stRadio > div { gap: 0.5rem; }
+  .rec-card { background: #f0fdf4; border-left: 3px solid #16a34a;
+              padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 4px; }
+  .rec-card-empty { background: #fff7ed; border-left: 3px solid #f59e0b;
+                    padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 4px; }
 </style>
 """, unsafe_allow_html=True)
 
+# ── Session state defaults ────────────────────────────────────────────────────
+st.session_state.setdefault("prefill", None)
+st.session_state.setdefault("page", "📊 Command Centre")
 
-# ── Accuracy score helper ─────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# CURRICULUM DATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+CURRICULUM: dict[str, dict[int, list[str]]] = {
+    "WBBSE": {
+        1:  ["Bengali", "English", "Mathematics"],
+        2:  ["Bengali", "English", "Mathematics"],
+        3:  ["Bengali", "English", "Mathematics", "Paribesh O Parichiti"],
+        4:  ["Bengali", "English", "Mathematics", "Paribesh O Parichiti"],
+        5:  ["Bengali", "English", "Mathematics", "Paribesh O Parichiti"],
+        6:  ["Bengali", "English", "Mathematics", "History", "Geography", "Life Science"],
+        7:  ["Bengali", "English", "Mathematics", "History", "Geography", "Life Science"],
+        8:  ["Bengali", "English", "Mathematics", "History", "Geography",
+             "Life Science", "Physical Science"],
+        9:  ["Bengali", "English", "Mathematics", "History", "Geography",
+             "Life Science", "Physical Science"],
+        10: ["Bengali", "English", "Mathematics", "History", "Geography",
+             "Life Science", "Physical Science"],
+    },
+    "WBCHSE": {
+        11: ["Bengali", "English", "Mathematics", "Physics", "Chemistry",
+             "Biology", "History", "Geography", "Economics",
+             "Accountancy", "Business Studies"],
+        12: ["Bengali", "English", "Mathematics", "Physics", "Chemistry",
+             "Biology", "History", "Geography", "Economics",
+             "Accountancy", "Business Studies"],
+    },
+    "CBSE": {
+        1:  ["English", "Hindi", "Mathematics", "Environmental Studies"],
+        2:  ["English", "Hindi", "Mathematics", "Environmental Studies"],
+        3:  ["English", "Hindi", "Mathematics", "Environmental Studies"],
+        4:  ["English", "Hindi", "Mathematics", "Environmental Studies"],
+        5:  ["English", "Hindi", "Mathematics", "Environmental Studies"],
+        6:  ["English", "Hindi", "Mathematics", "Science", "Social Science"],
+        7:  ["English", "Hindi", "Mathematics", "Science", "Social Science"],
+        8:  ["English", "Hindi", "Mathematics", "Science", "Social Science"],
+        9:  ["English", "Hindi", "Mathematics", "Science", "Social Science"],
+        10: ["English", "Hindi", "Mathematics", "Science", "Social Science"],
+        11: ["Physics", "Chemistry", "Mathematics", "Biology", "English",
+             "Economics", "Accountancy", "Business Studies"],
+        12: ["Physics", "Chemistry", "Mathematics", "Biology", "English",
+             "Economics", "Accountancy", "Business Studies"],
+    },
+    "ICSE": {
+        1:  ["English", "Mathematics", "Environmental Education"],
+        2:  ["English", "Mathematics", "Environmental Education"],
+        3:  ["English", "Mathematics", "Environmental Education"],
+        4:  ["English", "Mathematics", "Environmental Education"],
+        5:  ["English", "Mathematics", "Environmental Education"],
+        6:  ["English", "Mathematics", "Science", "Social Studies"],
+        7:  ["English", "Mathematics", "Science", "Social Studies"],
+        8:  ["English", "Mathematics", "Science", "History & Civics", "Geography"],
+        9:  ["English", "Mathematics", "Physics", "Chemistry", "Biology",
+             "History & Civics", "Geography"],
+        10: ["English", "Mathematics", "Physics", "Chemistry", "Biology",
+             "History & Civics", "Geography"],
+    },
+}
+
+# Higher = more important to fill first
+CLASS_PRIORITY: dict[int, int] = {
+    10: 10, 12: 9, 9: 8, 11: 7, 8: 6, 7: 5, 6: 4, 5: 3, 4: 2, 3: 2, 2: 1, 1: 1,
+}
+
+COMPETITIVE_TREE: dict[str, dict[str, list[str]]] = {
+    "WBPSC": {
+        "WBCS Prelims": [
+            "Indian History — Ancient & Medieval",
+            "Indian History — Modern & Independence Movement",
+            "West Bengal — History & Culture",
+            "Indian & WB Geography",
+            "Indian Constitution & Polity",
+            "Indian Economy & Planning",
+            "General Science — Physics",
+            "General Science — Chemistry",
+            "General Science — Biology",
+            "Environment & Ecology",
+            "Current Affairs & General Knowledge",
+            "Mathematics — Arithmetic & Reasoning",
+        ],
+        "WBCS Mains": [
+            "General Studies Paper I — History",
+            "General Studies Paper I — Geography",
+            "General Studies Paper II — Polity & Governance",
+            "General Studies Paper II — Economy",
+            "English Essay & Comprehension",
+            "Bengali Language & Literature",
+        ],
+        "Miscellaneous Services": [
+            "General Knowledge & Current Affairs",
+            "English Grammar",
+            "Bengali Grammar",
+            "Arithmetic & Numerical Ability",
+            "General Science",
+        ],
+    },
+    "SSC": {
+        "CGL (Tier 1)": [
+            "Quantitative Aptitude — Algebra",
+            "Quantitative Aptitude — Geometry",
+            "Quantitative Aptitude — Arithmetic",
+            "English — Comprehension & Grammar",
+            "General Intelligence & Reasoning",
+            "General Awareness — History",
+            "General Awareness — Geography",
+            "General Awareness — Polity",
+            "General Awareness — Economy",
+            "General Awareness — Science",
+        ],
+        "CHSL": [
+            "Quantitative Aptitude — Basic Maths",
+            "English — Grammar & Vocabulary",
+            "General Intelligence & Reasoning",
+            "General Awareness",
+        ],
+        "MTS": [
+            "Numerical Aptitude — Basic",
+            "General English",
+            "General Awareness — Basic",
+            "Reasoning — Non-Verbal",
+        ],
+    },
+    "UPSC": {
+        "Prelims (GS Paper 1)": [
+            "Ancient & Medieval Indian History",
+            "Modern Indian History",
+            "Indian & World Geography",
+            "Indian Polity & Constitution",
+            "Indian Economy",
+            "Environment & Ecology",
+            "Science & Technology",
+            "Current Affairs",
+        ],
+    },
+    "Railway": {
+        "NTPC": [
+            "Mathematics — Arithmetic",
+            "General Intelligence & Reasoning",
+            "General Awareness — Static GK",
+            "General Awareness — Current Affairs",
+            "English Grammar",
+        ],
+        "Group D": [
+            "Mathematics — Basic",
+            "General Science — Physics & Chemistry",
+            "General Science — Biology",
+            "General Awareness",
+            "Reasoning — Basic",
+        ],
+    },
+    "WBSSC": {
+        "TET (Primary)": [
+            "Child Development & Pedagogy",
+            "Language I — Bengali",
+            "Language II — English",
+            "Mathematics — Primary Level",
+            "Environmental Studies — Primary",
+        ],
+        "SLST": [
+            "Subject Knowledge — Core",
+            "Pedagogy & Teaching Methods",
+            "General Studies & Current Affairs",
+        ],
+    },
+}
+
+IT_TREE: dict[str, dict[str, list[str]]] = {
+    "AWS": {
+        "Cloud Practitioner (CLF-C02)": [
+            "Cloud Concepts & Value Proposition",
+            "AWS Global Infrastructure",
+            "Core Services — EC2 & Compute",
+            "Core Services — S3 & Storage",
+            "Core Services — RDS & Databases",
+            "Core Services — VPC & Networking",
+            "Security — IAM & Shared Responsibility",
+            "Security — AWS Security Services",
+            "Cloud Economics & Pricing",
+            "AWS Billing & Cost Management",
+        ],
+        "Solutions Architect Associate (SAA-C03)": [
+            "Resilient Architectures",
+            "High-Performance Architectures",
+            "Secure Architectures",
+            "Cost-Optimized Architectures",
+        ],
+        "Developer Associate (DVA-C02)": [
+            "Development with AWS Services",
+            "Security in AWS Applications",
+            "Deployment & Testing",
+            "Refactoring & Monitoring",
+        ],
+    },
+    "Microsoft": {
+        "Azure Fundamentals (AZ-900)": [
+            "Cloud Concepts",
+            "Azure Architecture & Services",
+            "Azure Management & Governance",
+        ],
+        "Azure Administrator (AZ-104)": [
+            "Manage Azure Identities & Governance",
+            "Implement & Manage Storage",
+            "Deploy & Manage Compute Resources",
+            "Implement Virtual Networking",
+            "Monitor & Backup Azure Resources",
+        ],
+    },
+    "Google": {
+        "Cloud Digital Leader": [
+            "Digital Transformation with Google Cloud",
+            "Innovating with Data & AI",
+            "Infrastructure & App Modernisation",
+            "Google Cloud Security & Operations",
+        ],
+        "Associate Cloud Engineer": [
+            "Setting up Cloud Environment",
+            "Planning & Configuring Cloud Solution",
+            "Deploying & Implementing Cloud Solution",
+            "Configuring Access & Security",
+        ],
+    },
+    "Cisco": {
+        "CCNA (200-301)": [
+            "Network Fundamentals",
+            "Network Access — VLANs & Trunking",
+            "IP Connectivity — Routing Protocols",
+            "IP Services — DHCP, DNS, NAT",
+            "Security Fundamentals",
+            "Automation & Programmability",
+        ],
+    },
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
 def _norm_score(score) -> float:
-    """
-    Backward-compat: old data stored accuracy as 0.0–1.0 ratio (bug).
-    New data stores as 0–100. Detect and convert old format.
-    """
+    """Backward-compat: old data stored 0.0–1.0, new data 0–100."""
     if score is None:
         return 0.0
     s = float(score)
     return round(s * 100, 1) if s <= 1.0 else round(s, 1)
 
 
-# ── Sanjaya Milestone Renderer ────────────────────────────────────────────────
-# Mirror of MILESTONES in db/memory.py — keep in sync if you add milestones.
-_SANJAYA_MILESTONES = [
-    (100,  "🎯 100 MCQs",   "Pilot cohort ready. Track first student completions."),
-    (500,  "🚀 DSPy Time",  "SC-001: Implement DSPy optimizer. See SANJAYA_CHRONICLES.md."),
-    (1000, "🔍 pgvector",   "SC-002: Enable semantic search for অন্বেষক."),
-    (2500, "🤖 PydanticAI", "SC-003: Build বেতাল + নারদ student-facing agents."),
-    (5000, "🌟 Full WB",    "Full West Bengal curriculum coverage approaching."),
-]
-
-def _render_sanjaya_milestone(live_mcq_count: int) -> None:
-    """
-    Render a Sanjaya milestone progress banner in the dashboard.
-    Shows progress toward the next upcoming milestone, and celebrates crossed ones.
-    """
-    # Find next uncrossed milestone
-    next_milestone = None
-    crossed = []
-    for threshold, label, action in _SANJAYA_MILESTONES:
-        if live_mcq_count >= threshold:
-            crossed.append((threshold, label, action))
-        else:
-            if next_milestone is None:
-                next_milestone = (threshold, label, action)
-
-    # ── Active milestone alert (DSPy specifically) ────────────────────────────
-    if live_mcq_count >= 500:
-        st.success(
-            "🚀 **[SANJAYA — SC-001 TRIGGERED]** You have **500+ live MCQs!**  \n"
-            "**Action**: Implement the **DSPy optimizer** to auto-tune agent prompts.  \n"
-            "See `SANJAYA_CHRONICLES.md → Entry SC-001` for the full implementation plan.",
-            icon="🧠",
-        )
-
-    # ── Progress bar toward next milestone ────────────────────────────────────
-    if next_milestone:
-        threshold, label, action = next_milestone
-        prev_threshold = crossed[-1][0] if crossed else 0
-        progress_in_band = live_mcq_count - prev_threshold
-        band_size        = threshold - prev_threshold
-        progress_pct     = min(progress_in_band / band_size, 1.0)
-
-        with st.container():
-            cols = st.columns([3, 1])
-            with cols[0]:
-                st.caption(
-                    f"**Sanjaya** · Next milestone: **{label}** at {threshold} MCQs "
-                    f"— {action}"
-                )
-                st.progress(progress_pct)
-            with cols[1]:
-                st.caption(
-                    f"{live_mcq_count} / {threshold} MCQs  \n"
-                    f"({threshold - live_mcq_count} to go)"
-                )
-    elif crossed:
-        # All milestones crossed — celebrate
-        st.balloons()
-        st.success("🏆 **All Sanjaya milestones reached!** Gyan AI is fully battle-tested.")
-
-
-# ── Supabase client ───────────────────────────────────────────────────────────
 @st.cache_resource
 def get_supabase() -> Client:
     return create_client(
@@ -137,86 +322,299 @@ def get_supabase() -> Client:
     )
 
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+@st.cache_data(ttl=300)
+def fetch_coverage(_cache_key: str) -> dict:
+    """
+    Returns {(board, class_num, subject): count}.
+    Queries triage queue (non-rejected) + pyq_bank_v2.
+    _cache_key rotates every 5 min to auto-expire.
+    """
+    db = get_supabase()
+    coverage: dict[tuple, int] = {}
+
+    # 1. Triage queue (pending + approved)
+    try:
+        rows = (
+            db.table("ingestion_triage_queue")
+            .select("raw_data")
+            .eq("payload_type", "pyq")
+            .neq("status", "rejected")
+            .execute()
+        ).data or []
+        for row in rows:
+            raw     = row.get("raw_data") or {}
+            board   = str(raw.get("board") or "").strip()
+            cls     = raw.get("class_num")
+            subject = str(raw.get("subject") or "").strip()
+            if board and cls is not None and subject:
+                key = (board, int(cls), subject)
+                coverage[key] = coverage.get(key, 0) + 1
+    except Exception:
+        pass
+
+    # 2. Live approved content
+    try:
+        rows = (
+            db.table("pyq_bank_v2")
+            .select("question_payload")
+            .execute()
+        ).data or []
+        for row in rows:
+            payload = row.get("question_payload") or {}
+            board   = str(payload.get("board") or "").strip()
+            cls     = payload.get("class_num")
+            subject = str(payload.get("subject") or "").strip()
+            if board and cls is not None and subject:
+                key = (board, int(cls), subject)
+                coverage[key] = coverage.get(key, 0) + 1
+    except Exception:
+        pass
+
+    return coverage
+
+
+def _cache_key() -> str:
+    """Rotates every 5 minutes — forces fetch_coverage to refresh."""
+    now = datetime.now()
+    return f"{now.date()}-{now.hour}-{now.minute // 5}"
+
+
+def get_recommendations(coverage: dict, limit: int = 10) -> list[dict]:
+    """Top-N school curriculum nodes with fewest MCQs, ranked by class priority."""
+    recs = []
+    for board, classes in CURRICULUM.items():
+        for class_num, subjects in classes.items():
+            priority = CLASS_PRIORITY.get(class_num, 1)
+            for subject in subjects:
+                count = coverage.get((board, class_num, subject), 0)
+                recs.append({
+                    "board":     board,
+                    "class_num": class_num,
+                    "subject":   subject,
+                    "count":     count,
+                    "priority":  priority,
+                    "label":     f"{board} · Class {class_num} · {subject}",
+                })
+    # 0 MCQ nodes first, then lowest count, then highest class priority
+    recs.sort(key=lambda x: (x["count"] > 0, -x["priority"], x["count"]))
+    return recs[:limit]
+
+
+def _dispatch_workflow(workflow: str, inputs: dict):
+    pat  = st.secrets.get("GITHUB_PAT", "")
+    repo = st.secrets.get("GITHUB_REPO", "arkagimt/gyan-ai-pipeline")
+    if not pat:
+        st.error("GITHUB_PAT not set in Streamlit secrets.")
+        return
+    url = (
+        f"https://api.github.com/repos/{repo}"
+        f"/actions/workflows/{workflow}/dispatches"
+    )
+    resp = requests.post(
+        url,
+        headers={
+            "Authorization":        f"Bearer {pat}",
+            "Accept":               "application/vnd.github.v3+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        json={"ref": "main", "inputs": {k: v for k, v in inputs.items() if v}},
+        timeout=15,
+    )
+    repo_url = f"https://github.com/{repo}"
+    if resp.status_code == 204:
+        st.success(
+            f"✅ Pipeline dispatched!  "
+            f"[🔗 Watch on GitHub]({repo_url}/actions/workflows/{workflow})"
+        )
+    else:
+        st.error(f"GitHub API error {resp.status_code}: {resp.text[:300]}")
+
+
+def _coverage_badge(count: int) -> str:
+    if count == 0:   return "🔴 0"
+    if count < 5:    return f"🟡 {count}"
+    if count < 10:   return f"🟢 {count}"
+    return f"✅ {count}"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SANJAYA MILESTONE TRACKER
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_SANJAYA_MILESTONES = [
+    (100,  "🎯 100 MCQs",   "Pilot cohort ready. Track first student completions."),
+    (500,  "🚀 DSPy Time",  "SC-001: Implement DSPy optimizer. See SANJAYA_CHRONICLES.md."),
+    (1000, "🔍 pgvector",   "SC-002: Enable semantic search for অন্বেষক."),
+    (2500, "🤖 PydanticAI", "SC-003: Build বেতাল + নারদ student-facing agents."),
+    (5000, "🌟 Full WB",    "Full West Bengal curriculum coverage approaching."),
+]
+
+
+def _render_sanjaya_milestone(live_mcq_count: int) -> None:
+    if live_mcq_count >= 500:
+        st.success(
+            "🚀 **[SANJAYA — SC-001 TRIGGERED]** You have **500+ live MCQs!**  \n"
+            "**Action**: Implement the **DSPy optimizer** to auto-tune agent prompts.  \n"
+            "See `SANJAYA_CHRONICLES.md → Entry SC-001` for the full plan.",
+            icon="🧠",
+        )
+
+    crossed, next_milestone = [], None
+    for threshold, label, action in _SANJAYA_MILESTONES:
+        if live_mcq_count >= threshold:
+            crossed.append((threshold, label, action))
+        elif next_milestone is None:
+            next_milestone = (threshold, label, action)
+
+    if next_milestone:
+        threshold, label, action = next_milestone
+        prev = crossed[-1][0] if crossed else 0
+        pct  = min((live_mcq_count - prev) / max(threshold - prev, 1), 1.0)
+        cols = st.columns([4, 1])
+        with cols[0]:
+            st.caption(
+                f"**Sanjaya** · Next milestone: **{label}** at {threshold} MCQs"
+                f" — {action}"
+            )
+            st.progress(pct)
+        with cols[1]:
+            st.caption(f"{live_mcq_count} / {threshold}  \n({threshold - live_mcq_count} to go)")
+    elif crossed:
+        st.success("🏆 **All Sanjaya milestones reached!** Gyan AI is fully battle-tested.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIDEBAR
+# ═══════════════════════════════════════════════════════════════════════════════
+
 st.sidebar.markdown("## 🧠 Gyan AI")
-st.sidebar.markdown("**Admin Control Room**")
+st.sidebar.markdown("**Admin Command Centre**")
 st.sidebar.markdown("---")
+
+PAGES = [
+    "📊 Command Centre",
+    "🗺️ Coverage Map",
+    "🔍 Triage Queue",
+    "🚀 Smart Pipeline",
+    "🤖 Agent Prompts",
+]
+
+# Support programmatic navigation via session_state["page"]
+if st.session_state["page"] not in PAGES:
+    st.session_state["page"] = PAGES[0]
 
 page = st.sidebar.radio(
     "Navigate",
-    ["📊 Dashboard", "🔍 Triage Queue", "🚀 Pipeline Control", "🤖 Agent Prompts"],
+    PAGES,
+    index=PAGES.index(st.session_state["page"]),
     label_visibility="collapsed",
 )
+st.session_state["page"] = page
 
 st.sidebar.markdown("---")
-st.sidebar.caption(f"Today: {datetime.now().strftime('%d %b %Y')}")
+st.sidebar.caption(f"📅 {datetime.now().strftime('%d %b %Y')}")
+st.sidebar.caption("⚡ Pipeline: Public Repo · Streamlit: Free Tier")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE 1 — DASHBOARD
+# PAGE 1 — COMMAND CENTRE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def page_dashboard():
-    st.title("📊 Dashboard")
-    st.caption("Live snapshot of your Gyan AI data pipeline.")
+def page_command_centre():
+    st.title("📊 Command Centre")
+    st.caption("Big picture — live metrics, curriculum completion, and what to run next.")
 
-    db = get_supabase()
+    db       = get_supabase()
+    coverage = fetch_coverage(_cache_key())
 
-    # ── Fetch metrics ────────────────────────────────────────────────────────
+    # ── Fetch counts ──────────────────────────────────────────────────────────
     with st.spinner("Loading metrics..."):
         try:
-            pyq_count    = db.table("pyq_bank_v2").select("*", count="exact", head=True).execute().count or 0
-            mat_count    = db.table("study_materials").select("*", count="exact", head=True).execute().count or 0
-            pending_count = (
-                db.table("ingestion_triage_queue")
-                .select("*", count="exact", head=True)
-                .eq("status", "pending")
-                .execute().count or 0
-            )
-            approved_count = (
-                db.table("ingestion_triage_queue")
-                .select("*", count="exact", head=True)
-                .eq("status", "approved")
-                .execute().count or 0
-            )
-            rejected_count = (
-                db.table("ingestion_triage_queue")
-                .select("*", count="exact", head=True)
-                .eq("status", "rejected")
-                .execute().count or 0
-            )
+            pyq_count      = db.table("pyq_bank_v2").select("*", count="exact", head=True).execute().count or 0
+            mat_count      = db.table("study_materials").select("*", count="exact", head=True).execute().count or 0
+            pending_count  = (db.table("ingestion_triage_queue").select("*", count="exact", head=True)
+                               .eq("status", "pending").execute().count or 0)
+            approved_count = (db.table("ingestion_triage_queue").select("*", count="exact", head=True)
+                               .eq("status", "approved").execute().count or 0)
+            rejected_count = (db.table("ingestion_triage_queue").select("*", count="exact", head=True)
+                               .eq("status", "rejected").execute().count or 0)
         except Exception as e:
             st.error(f"Supabase connection failed: {e}")
             return
 
-    # ── Metric Cards ──────────────────────────────────────────────────────────
+    # ── Metric cards ──────────────────────────────────────────────────────────
     c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Live MCQs",        pyq_count,     help="Approved in pyq_bank_v2")
-    c2.metric("Study Notes",      mat_count,     help="Approved in study_materials")
-    c3.metric("Pending Review",   pending_count, help="In ingestion_triage_queue (pending)")
-    c4.metric("Total Approved",   approved_count)
-    c5.metric("Total Rejected",   rejected_count)
+    c1.metric("Live MCQs",       pyq_count,      help="Approved in pyq_bank_v2")
+    c2.metric("Study Notes",     mat_count,       help="Approved in study_materials")
+    c3.metric("Pending Review",  pending_count,   help="Awaiting human review")
+    c4.metric("Total Approved",  approved_count)
+    c5.metric("Total Rejected",  rejected_count)
 
-    # ── Sanjaya Milestone Tracker ─────────────────────────────────────────────
+    if pending_count > 0:
+        st.warning(
+            f"⚠️ **{pending_count} items** waiting in Triage Queue. "
+            f"Go to **🔍 Triage Queue** to review.",
+            icon="📬",
+        )
+
+    # ── Sanjaya milestone ─────────────────────────────────────────────────────
     _render_sanjaya_milestone(pyq_count)
 
     st.markdown("---")
 
-    # ── Triage Queue Status Chart ─────────────────────────────────────────────
-    col_left, col_right = st.columns(2)
+    # ── Curriculum completion + Recommendations ───────────────────────────────
+    col_left, col_right = st.columns([1, 1])
 
     with col_left:
+        st.subheader("📚 Curriculum Completion")
+        st.caption("% of nodes with ≥ 5 MCQs per board")
+
+        for board, classes in CURRICULUM.items():
+            total, covered = 0, 0
+            for class_num, subjects in classes.items():
+                for subject in subjects:
+                    total  += 1
+                    count   = coverage.get((board, class_num, subject), 0)
+                    covered += (1 if count >= 5 else 0)
+            pct = (covered / total) if total else 0
+            col_b, col_p = st.columns([1, 3])
+            col_b.caption(f"**{board}**")
+            col_p.progress(pct, text=f"{covered}/{total} nodes  ({pct:.0%})")
+
+    with col_right:
+        st.subheader("🎯 Top Recommendations")
+        st.caption("Highest-priority nodes with fewest MCQs")
+
+        recs = get_recommendations(coverage, limit=8)
+        for rec in recs:
+            count = rec["count"]
+            icon  = "🔴" if count == 0 else "🟡"
+            cols  = st.columns([5, 2])
+            with cols[0]:
+                st.markdown(f"{icon} **{rec['label']}**  \n`{count} MCQs`")
+            with cols[1]:
+                if st.button("▶ Run", key=f"rec_{rec['board']}_{rec['class_num']}_{rec['subject']}"):
+                    st.session_state["prefill"] = {
+                        "board":     rec["board"],
+                        "class_num": rec["class_num"],
+                        "subject":   rec["subject"],
+                    }
+                    st.session_state["page"] = "🚀 Smart Pipeline"
+                    st.rerun()
+
+    st.markdown("---")
+
+    # ── Charts ────────────────────────────────────────────────────────────────
+    col_chart1, col_chart2 = st.columns(2)
+
+    with col_chart1:
         st.subheader("Triage Queue Status")
-        if (pending_count + approved_count + rejected_count) > 0:
+        total_triage = pending_count + approved_count + rejected_count
+        if total_triage > 0:
             fig = px.pie(
                 names=["Pending", "Approved", "Rejected"],
                 values=[pending_count, approved_count, rejected_count],
-                color=["Pending", "Approved", "Rejected"],
-                color_discrete_map={
-                    "Pending":  "#f59e0b",
-                    "Approved": "#10b981",
-                    "Rejected": "#ef4444",
-                },
+                color_discrete_map={"Pending": "#f59e0b", "Approved": "#10b981", "Rejected": "#ef4444"},
                 hole=0.5,
             )
             fig.update_traces(textposition="outside", textinfo="percent+label")
@@ -225,8 +623,7 @@ def page_dashboard():
         else:
             st.info("No triage data yet. Run the pipeline first.")
 
-    # ── Recent Accuracy Scores ────────────────────────────────────────────────
-    with col_right:
+    with col_chart2:
         st.subheader("AI Accuracy Distribution")
         try:
             score_data = (
@@ -239,47 +636,44 @@ def page_dashboard():
 
             if score_data:
                 df = pd.DataFrame(score_data)
-                # Normalize old ratio format (0.0–1.0) to percentage (0–100)
                 df["ai_accuracy_score"] = df["ai_accuracy_score"].apply(
-                    lambda s: float(s) * 100 if s is not None and float(s) <= 1.0 else (float(s) if s is not None else 0.0)
+                    lambda s: float(s) * 100 if s is not None and float(s) <= 1.0
+                    else (float(s) if s is not None else 0.0)
                 )
                 fig2 = px.histogram(
-                    df,
-                    x="ai_accuracy_score",
-                    color="payload_type",
-                    nbins=20,
-                    labels={"ai_accuracy_score": "Accuracy Score", "payload_type": "Type"},
+                    df, x="ai_accuracy_score", color="payload_type", nbins=20,
+                    labels={"ai_accuracy_score": "Accuracy %", "payload_type": "Type"},
                     color_discrete_map={"pyq": "#6366f1", "material": "#10b981"},
                     barmode="overlay",
                 )
                 fig2.update_layout(margin=dict(t=20, b=20))
                 st.plotly_chart(fig2, use_container_width=True)
             else:
-                st.info("No accuracy scores yet.")
+                st.info("No accuracy data yet.")
         except Exception as e:
-            st.warning(f"Could not load accuracy data: {e}")
+            st.warning(f"Could not load accuracy chart: {e}")
 
-    # ── Recent Pipeline Batches ───────────────────────────────────────────────
-    st.subheader("Recent Batches")
+    # ── Recent batches ────────────────────────────────────────────────────────
+    st.markdown("---")
+    st.subheader("Recent Pipeline Batches")
     try:
         recent = (
             db.table("ingestion_triage_queue")
             .select("batch_id, segment, payload_type, status, created_at")
             .order("created_at", desc=True)
-            .limit(50)
+            .limit(60)
             .execute()
         ).data or []
 
         if recent:
-            df_recent = pd.DataFrame(recent)
-            # Group by batch_id
-            batch_summary = (
-                df_recent.groupby(["batch_id", "segment", "status"])
+            df_r = pd.DataFrame(recent)
+            summary = (
+                df_r.groupby(["batch_id", "segment", "status"])
                 .size()
                 .reset_index(name="count")
                 .sort_values("batch_id", ascending=False)
             )
-            st.dataframe(batch_summary, use_container_width=True, hide_index=True)
+            st.dataframe(summary, use_container_width=True, hide_index=True)
         else:
             st.info("No batches yet.")
     except Exception as e:
@@ -287,7 +681,154 @@ def page_dashboard():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE 2 — TRIAGE QUEUE
+# PAGE 2 — COVERAGE MAP
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def page_coverage_map():
+    st.title("🗺️ Coverage Map")
+    st.caption("Visual heatmap of MCQ coverage across the curriculum. Red = empty, green = well-covered.")
+
+    coverage = fetch_coverage(_cache_key())
+
+    col_board, col_refresh = st.columns([3, 1])
+    with col_board:
+        board = st.radio(
+            "Board", list(CURRICULUM.keys()), horizontal=True,
+        )
+    with col_refresh:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🔄 Refresh data"):
+            st.cache_data.clear()
+            st.rerun()
+
+    classes  = sorted(CURRICULUM[board].keys())
+    # All subjects that appear in this board across any class
+    all_subjects = sorted({s for cls in CURRICULUM[board].values() for s in cls})
+
+    # Build matrix: rows=classes, cols=subjects
+    # Value: -1 = not in curriculum, 0 = in curriculum but 0 MCQs, N = N MCQs
+    z_matrix, hover_matrix = [], []
+    y_labels = [f"Class {c}" for c in classes]
+
+    for c in classes:
+        row_z, row_h = [], []
+        curriculum_subjects = CURRICULUM[board][c]
+        for s in all_subjects:
+            if s not in curriculum_subjects:
+                row_z.append(-1)
+                row_h.append(f"Class {c} | {s}<br>Not in curriculum")
+            else:
+                count = coverage.get((board, c, s), 0)
+                row_z.append(count)
+                status = ("🔴 Empty" if count == 0
+                          else "🟡 Low" if count < 5
+                          else "🟢 Good" if count < 10
+                          else "✅ Great")
+                row_h.append(f"Class {c} | {s}<br>{count} MCQs — {status}")
+        z_matrix.append(row_z)
+        hover_matrix.append(row_h)
+
+    # Custom colorscale: grey=-1, red=0, orange=1-4, light-green=5-9, dark-green=10+
+    # We cap display at 15 for colour range
+    colorscale = [
+        [0.000, "#f1f5f9"],  # -1 → light grey (not in curriculum)
+        [0.001, "#ef4444"],  # 0  → red
+        [0.25,  "#f97316"],  # ~3  → orange
+        [0.45,  "#fbbf24"],  # ~6  → yellow
+        [0.65,  "#86efac"],  # ~9  → light green
+        [1.000, "#15803d"],  # 15+ → dark green
+    ]
+
+    fig = go.Figure(go.Heatmap(
+        z=z_matrix,
+        x=all_subjects,
+        y=y_labels,
+        text=hover_matrix,
+        hovertemplate="%{text}<extra></extra>",
+        colorscale=colorscale,
+        zmin=-1,
+        zmax=15,
+        showscale=True,
+        colorbar=dict(
+            title="MCQs",
+            tickvals=[-1, 0, 5, 10, 15],
+            ticktext=["N/A", "0", "5", "10", "15+"],
+            thickness=12,
+        ),
+    ))
+    fig.update_layout(
+        title=f"{board} Curriculum Coverage",
+        xaxis=dict(tickangle=-35, tickfont=dict(size=11)),
+        yaxis=dict(tickfont=dict(size=11)),
+        height=max(350, len(classes) * 42 + 120),
+        margin=dict(t=50, b=10, l=10, r=10),
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    # ── Gap analysis below heatmap ────────────────────────────────────────────
+    empty_nodes, low_nodes = [], []
+    for c in classes:
+        for s in CURRICULUM[board][c]:
+            count = coverage.get((board, c, s), 0)
+            node  = {"board": board, "class_num": c, "subject": s, "count": count}
+            if count == 0:
+                empty_nodes.append(node)
+            elif count < 5:
+                low_nodes.append(node)
+
+    # Sort by priority
+    for lst in (empty_nodes, low_nodes):
+        lst.sort(key=lambda x: -CLASS_PRIORITY.get(x["class_num"], 1))
+
+    col_empty, col_low = st.columns(2)
+
+    with col_empty:
+        st.subheader(f"🔴 Empty Nodes ({len(empty_nodes)})")
+        st.caption("0 MCQs — highest priority to fill")
+        if not empty_nodes:
+            st.success("No empty nodes! Great coverage.")
+        else:
+            for node in empty_nodes[:20]:
+                c1, c2 = st.columns([4, 1])
+                with c1:
+                    st.markdown(f"Class **{node['class_num']}** · {node['subject']}")
+                with c2:
+                    if st.button("▶ Run",
+                                 key=f"empty_{board}_{node['class_num']}_{node['subject']}"):
+                        st.session_state["prefill"] = {
+                            "board":     board,
+                            "class_num": node["class_num"],
+                            "subject":   node["subject"],
+                        }
+                        st.session_state["page"] = "🚀 Smart Pipeline"
+                        st.rerun()
+            if len(empty_nodes) > 20:
+                st.caption(f"… and {len(empty_nodes) - 20} more")
+
+    with col_low:
+        st.subheader(f"🟡 Low Coverage ({len(low_nodes)})")
+        st.caption("1–4 MCQs — needs top-up")
+        if not low_nodes:
+            st.success("All started nodes have ≥ 5 MCQs!")
+        else:
+            for node in low_nodes[:20]:
+                c1, c2 = st.columns([4, 1])
+                with c1:
+                    st.markdown(f"Class **{node['class_num']}** · {node['subject']} `({node['count']})`")
+                with c2:
+                    if st.button("▶ Top-up",
+                                 key=f"low_{board}_{node['class_num']}_{node['subject']}"):
+                        st.session_state["prefill"] = {
+                            "board":     board,
+                            "class_num": node["class_num"],
+                            "subject":   node["subject"],
+                        }
+                        st.session_state["page"] = "🚀 Smart Pipeline"
+                        st.rerun()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PAGE 3 — TRIAGE QUEUE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def page_triage():
@@ -296,18 +837,19 @@ def page_triage():
 
     db = get_supabase()
 
-    # ── Controls ──────────────────────────────────────────────────────────────
     col_type, col_refresh, col_bulk = st.columns([2, 1, 2])
     with col_type:
-        data_type = st.radio("Content type", ["pyq", "material"], horizontal=True,
-                             format_func=lambda x: "📝 MCQs" if x == "pyq" else "📚 Study Notes")
+        data_type = st.radio(
+            "Content type", ["pyq", "material"], horizontal=True,
+            format_func=lambda x: "📝 MCQs" if x == "pyq" else "📚 Study Notes",
+        )
     with col_refresh:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🔄 Refresh"):
             st.cache_data.clear()
             st.rerun()
 
-    # ── Fetch pending items ───────────────────────────────────────────────────
+    # Fetch pending
     try:
         rows = (
             db.table("ingestion_triage_queue")
@@ -328,51 +870,49 @@ def page_triage():
 
     st.markdown(f"**{len(rows)} items** awaiting review")
 
-    # ── Bulk Approve ──────────────────────────────────────────────────────────
     with col_bulk:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button(f"✅ Approve All {len(rows)}", type="primary"):
             _bulk_approve(db, rows, data_type)
+            st.cache_data.clear()
             st.rerun()
 
     st.markdown("---")
 
-    # ── Item Cards ────────────────────────────────────────────────────────────
     for row in rows:
-        raw = row.get("raw_data") or {}
+        raw      = row.get("raw_data") or {}
         accuracy = _norm_score(row.get("ai_accuracy_score"))
         flags    = row.get("validation_flags") or []
         segment  = row.get("segment", "")
         batch_id = row.get("batch_id", "")
+        taxonomy = raw.get("taxonomy_label", "—")
 
-        # Card container
         with st.container(border=True):
-            # Header row
             h1, h2, h3 = st.columns([3, 1, 2])
             with h1:
                 if data_type == "pyq":
                     st.markdown(f"**{raw.get('question', '—')}**")
                 else:
                     st.markdown(f"**📚 {raw.get('topic_title', '—')}**")
+                st.caption(f"📌 {taxonomy}")
             with h2:
                 score_color = "🟢" if accuracy >= 70 else "🟡" if accuracy >= 50 else "🔴"
                 st.markdown(f"{score_color} **{accuracy:.0f}%**")
             with h3:
                 st.caption(f"`{segment}` · `{batch_id[-12:]}`")
                 if flags:
-                    st.caption(f"⚠️ {', '.join(flags)}")
+                    st.caption(f"⚠️ {', '.join(str(f) for f in flags)}")
 
-            # Content
             if data_type == "pyq":
                 _render_mcq(raw)
             else:
                 _render_note(raw)
 
-            # Action buttons
             a1, a2, _ = st.columns([1, 1, 4])
             with a1:
                 if st.button("✅ Approve", key=f"approve_{row['id']}"):
                     _approve_item(db, row, data_type)
+                    st.cache_data.clear()
                     st.rerun()
             with a2:
                 if st.button("❌ Reject", key=f"reject_{row['id']}"):
@@ -383,8 +923,8 @@ def page_triage():
 def _render_mcq(raw: dict):
     options = raw.get("options") or {}
     correct = raw.get("correct", "")
+    cols    = st.columns(2)
 
-    cols = st.columns(2)
     with cols[0]:
         for key in ["A", "B", "C", "D"]:
             val = options.get(key, "—")
@@ -394,7 +934,7 @@ def _render_mcq(raw: dict):
                 st.markdown(f"**{key}:** {val}")
 
     with cols[1]:
-        reasoning = raw.get("reasoning_process", "")
+        reasoning   = raw.get("reasoning_process", "")
         explanation = raw.get("explanation", "")
         if reasoning:
             with st.expander("🧠 Reasoning Process"):
@@ -402,70 +942,67 @@ def _render_mcq(raw: dict):
         if explanation:
             st.info(f"💡 **Explanation:** {explanation}")
 
-        meta_cols = st.columns(3)
-        meta_cols[0].caption(f"🎯 {raw.get('difficulty','—')}")
-        meta_cols[1].caption(f"🌱 {raw.get('bloom_level','—')}")
-        meta_cols[2].caption(f"🏷 {raw.get('topic_tag','—')}")
+        mc = st.columns(3)
+        mc[0].caption(f"🎯 {raw.get('difficulty', '—')}")
+        mc[1].caption(f"🌱 {raw.get('bloom_level', '—')}")
+        mc[2].caption(f"🏷 {raw.get('topic_tag', '—')}")
 
 
 def _render_note(raw: dict):
     st.write(raw.get("summary", ""))
-
     c1, c2 = st.columns(2)
     with c1:
-        concepts = raw.get("key_concepts") or []
-        if concepts:
-            st.markdown("**Key Concepts**")
-            for c in concepts:
-                st.markdown(f"- {c}")
+        for concept in (raw.get("key_concepts") or []):
+            st.markdown(f"- {concept}")
     with c2:
-        facts = raw.get("important_facts") or []
-        if facts:
-            st.markdown("**Important Facts**")
-            for f in facts:
-                st.markdown(f"- {f}")
-
-    formulas = raw.get("formulas") or []
-    if formulas:
+        for fact in (raw.get("important_facts") or []):
+            st.markdown(f"- {fact}")
+    if raw.get("formulas"):
         with st.expander("📐 Formulas"):
-            for f in formulas:
+            for f in raw["formulas"]:
                 st.code(f)
-
-    hooks = raw.get("memory_hooks") or []
-    if hooks:
+    if raw.get("memory_hooks"):
         with st.expander("🧲 Memory Hooks"):
-            for h in hooks:
+            for h in raw["memory_hooks"]:
                 st.markdown(f"💡 {h}")
 
 
 def _approve_item(db: Client, row: dict, data_type: str):
-    """Move a triage item to pyq_bank_v2 or study_materials."""
+    """
+    Move triage item to pyq_bank_v2 or study_materials.
+    FIXED: hierarchy_node_id=None (was "" which broke FK constraint to exam_hierarchy).
+    """
     raw     = row.get("raw_data") or {}
     segment = row.get("segment", "school")
     region  = "global" if segment == "it" else "wb"
+    target  = "pyq_bank_v2" if data_type == "pyq" else "study_materials"
+    score   = _norm_score(row.get("ai_accuracy_score")) or 70.0
 
-    target_table = "pyq_bank_v2" if data_type == "pyq" else "study_materials"
     insert_row = {
-        "hierarchy_node_id": "",
+        "hierarchy_node_id": None,        # FK to exam_hierarchy — nullable (ON DELETE SET NULL)
         "region_id":         region,
-        "subject_or_topic":  (
+        "subject_or_topic": (
             raw.get("subject") or raw.get("topic_tag") or
             raw.get("topic_title") or raw.get("taxonomy_label") or segment
         ),
-        "question_payload":  raw if data_type == "pyq"      else None,
-        "data_payload":      raw if data_type == "material"  else None,
-        "probability_score": _norm_score(row.get("ai_accuracy_score")) or 70.0,
-        "ai_accuracy_score": _norm_score(row.get("ai_accuracy_score")) or 70.0,
+        "question_payload":  raw  if data_type == "pyq"      else None,
+        "data_payload":      raw  if data_type == "material"  else None,
+        "probability_score": score,
+        "ai_accuracy_score": score,
         "validation_flags":  row.get("validation_flags") or [],
         "verified_by_human": True,
     }
 
     try:
-        db.table(target_table).insert(insert_row).execute()
+        db.table(target).insert(insert_row).execute()
         db.table("ingestion_triage_queue").update({"status": "approved"}).eq("id", row["id"]).execute()
-        st.toast("✅ Approved and pushed live!", icon="✅")
+        st.toast(f"✅ Approved → {target}", icon="✅")
     except Exception as e:
-        st.error(f"Approve failed: {e}")
+        st.error(f"❌ Approve failed: {e}")
+        st.caption(
+            "Debug: Check Supabase logs for the exact constraint. "
+            "The error above is the raw DB message."
+        )
 
 
 def _reject_item(db: Client, item_id: str):
@@ -484,125 +1021,169 @@ def _bulk_approve(db: Client, rows: list, data_type: str):
             success += 1
         except Exception:
             fail += 1
-    st.toast(f"Bulk approved {success} items. {fail} failed.", icon="✅")
+    st.toast(f"Bulk: {success} approved, {fail} failed.", icon="✅")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE 3 — PIPELINE CONTROL
+# PAGE 4 — SMART PIPELINE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def page_pipeline():
-    st.title("🚀 Pipeline Control")
-    st.caption("Trigger the সর্বজ্ঞ → চিত্রগুপ্ত → সূত্রধর pipeline via GitHub Actions.")
-
-    segment = st.radio("Segment", ["school", "competitive", "it"], horizontal=True,
-                       format_func=lambda x: {"school": "🏫 School", "competitive": "🏆 Competitive", "it": "💻 IT / Cloud"}[x])
-
-    st.markdown("---")
-
-    with st.form("pipeline_form"):
-        count = st.slider("MCQ count", 3, 20, 5)
-
-        if segment == "school":
-            c1, c2 = st.columns(2)
-            board     = c1.selectbox("Board", ["WBBSE", "WBCHSE", "CBSE", "ICSE"])
-            class_num = c2.selectbox("Class", list(range(6, 13)))
-            subject   = st.text_input("Subject", placeholder="Physical Science")
-            chapter   = st.text_input("Chapter (optional)", placeholder="Electricity")
-            source_url = st.text_input("Source URL (optional)")
-            inputs = {
-                "board": board, "class_num": str(class_num),
-                "subject": subject, "chapter": chapter,
-                "count": str(count), "source_url": source_url,
-            }
-            workflow = "ingest_school.yml"
-            valid = bool(subject)
-
-        elif segment == "competitive":
-            authority  = st.text_input("Authority", placeholder="WBPSC")
-            exam       = st.text_input("Exam", placeholder="WBCS Prelims")
-            topic      = st.text_input("Topic", placeholder="History of India")
-            source_url = st.text_input("Source URL (optional)")
-            inputs = {
-                "authority": authority, "exam": exam,
-                "topic": topic, "count": str(count), "source_url": source_url,
-            }
-            workflow = "ingest_competitive.yml"
-            valid = bool(authority and exam and topic)
-
-        else:  # it
-            provider   = st.text_input("Provider", placeholder="AWS")
-            exam       = st.text_input("Exam / Cert", placeholder="Cloud Practitioner (CLF-C02)")
-            topic      = st.text_input("Topic", placeholder="Security & Compliance")
-            source_url = st.text_input("Source URL (optional)")
-            inputs = {
-                "provider": provider, "exam": exam,
-                "topic": topic, "count": str(count), "source_url": source_url,
-            }
-            workflow = "ingest_it.yml"
-            valid = bool(provider and exam and topic)
-
-        # ── Dedup memory override ─────────────────────────────────────────────
-        st.markdown("---")
-        force = st.checkbox(
-            "⚡ Force regenerate (skip dedup memory check)",
-            value=False,
-            help="By default, the pipeline skips topics that already have enough MCQs. "
-                 "Check this to regenerate even if content exists — useful after a bad batch.",
-        )
-        if force:
-            inputs["force"] = "true"
-
-        submitted = st.form_submit_button("🚀 Run Pipeline", type="primary", disabled=not valid)
-
-    if submitted:
-        if not valid:
-            st.warning("Please fill in all required fields.")
-        else:
-            _dispatch_workflow(workflow, inputs)
-
-    # ── Recent workflow runs ──────────────────────────────────────────────────
-    st.markdown("---")
-    st.subheader("Recent runs")
-    st.caption("Check GitHub Actions for live run status →")
-    repo = st.secrets.get("GITHUB_REPO", "arkagimt/gyan-ai-pipeline")
-    st.markdown(f"[📋 View all runs on GitHub](https://github.com/{repo}/actions)")
-
-
-def _dispatch_workflow(workflow: str, inputs: dict):
-    pat  = st.secrets.get("GITHUB_PAT", "")
-    repo = st.secrets.get("GITHUB_REPO", "arkagimt/gyan-ai-pipeline")
-
-    if not pat:
-        st.error("GITHUB_PAT not set in Streamlit secrets.")
-        return
-
-    url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches"
-    resp = requests.post(
-        url,
-        headers={
-            "Authorization": f"Bearer {pat}",
-            "Accept": "application/vnd.github.v3+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-        json={"ref": "main", "inputs": {k: v for k, v in inputs.items() if v}},
-        timeout=15,
+    st.title("🚀 Smart Pipeline")
+    st.caption(
+        "Curriculum-aware pipeline trigger. "
+        "Coverage counts shown before you submit — no more guessing what to run."
     )
 
-    if resp.status_code == 204:
-        st.success(f"✅ Pipeline dispatched! Workflow: `{workflow}`")
-        st.info(f"[🔗 Watch it run →](https://github.com/{repo}/actions/workflows/{workflow})")
-    else:
-        st.error(f"GitHub API error {resp.status_code}: {resp.text[:300]}")
+    coverage = fetch_coverage(_cache_key())
+
+    # ── Pre-fill banner ───────────────────────────────────────────────────────
+    prefill = st.session_state.get("prefill")
+    if prefill:
+        st.info(
+            f"📌 **Pre-filled from Coverage Map:** "
+            f"{prefill.get('board')} · Class {prefill.get('class_num')} · {prefill.get('subject')}  "
+            f"— scroll down to review and submit.",
+            icon="🗺️",
+        )
+
+    tab_school, tab_comp, tab_it = st.tabs(["🏫 School", "🏆 Competitive", "💻 IT / Cloud"])
+
+    # ── SCHOOL TAB ────────────────────────────────────────────────────────────
+    with tab_school:
+        col_b, col_c = st.columns(2)
+
+        # Default from prefill
+        pf_board = prefill.get("board", "WBBSE") if prefill else "WBBSE"
+        pf_class = prefill.get("class_num", 10)  if prefill else 10
+        pf_subj  = prefill.get("subject", "")    if prefill else ""
+
+        board_options = list(CURRICULUM.keys())
+        board_idx     = board_options.index(pf_board) if pf_board in board_options else 0
+        board = col_b.selectbox("Board", board_options, index=board_idx, key="school_board")
+
+        class_options = sorted(CURRICULUM[board].keys())
+        class_idx     = class_options.index(pf_class) if pf_class in class_options else 0
+        class_num = col_c.selectbox("Class", class_options, index=class_idx,
+                                    format_func=lambda x: f"Class {x}", key="school_class")
+
+        # Coverage preview for this board+class
+        st.markdown(f"**Coverage for {board} · Class {class_num}:**")
+        preview_cols = st.columns(4)
+        subjects_for_class = CURRICULUM[board][class_num]
+        for i, s in enumerate(subjects_for_class):
+            count = coverage.get((board, class_num, s), 0)
+            preview_cols[i % 4].metric(s, _coverage_badge(count))
+
+        st.markdown("---")
+
+        # Subject dropdown (from curriculum)
+        subj_idx = subjects_for_class.index(pf_subj) if pf_subj in subjects_for_class else 0
+        subject  = st.selectbox("Subject", subjects_for_class, index=subj_idx, key="school_subject")
+
+        existing = coverage.get((board, class_num, subject), 0)
+        if existing > 0:
+            status_text = (
+                f"🟢 Good coverage" if existing >= 5
+                else f"🟡 Low coverage — top-up recommended"
+            )
+            st.info(f"**Currently:** {existing} MCQs for this node · {status_text}")
+        else:
+            st.warning("**Currently:** 0 MCQs — this node is empty. Run the pipeline!")
+
+        chapter    = st.text_input("Chapter (optional)", placeholder="e.g. Electricity", key="school_chapter")
+        source_url = st.text_input("Source URL (optional)", key="school_url")
+        count      = st.slider("MCQ count", 3, 20, 5, key="school_count")
+        force      = st.checkbox("⚡ Force regenerate (skip dedup check)", key="school_force")
+
+        if st.button("🚀 Run School Pipeline", type="primary", key="school_submit"):
+            if not subject:
+                st.warning("Select a subject.")
+            else:
+                inputs = {
+                    "board":     board,
+                    "class_num": str(class_num),
+                    "subject":   subject,
+                    "count":     str(count),
+                }
+                if chapter:    inputs["chapter"]    = chapter
+                if source_url: inputs["source_url"] = source_url
+                if force:      inputs["force"]      = "true"
+                _dispatch_workflow("ingest_school.yml", inputs)
+                # Clear prefill after dispatch
+                st.session_state["prefill"] = None
+
+    # ── COMPETITIVE TAB ───────────────────────────────────────────────────────
+    with tab_comp:
+        authority = st.selectbox("Authority", list(COMPETITIVE_TREE.keys()), key="comp_authority")
+        exams     = list(COMPETITIVE_TREE[authority].keys())
+        exam      = st.selectbox("Exam", exams, key="comp_exam")
+        topics    = COMPETITIVE_TREE[authority][exam]
+        topic     = st.selectbox("Topic", topics, key="comp_topic")
+
+        # Show existing count
+        comp_key = (authority, exam, topic)
+        existing_comp = sum(
+            v for (a, e, t), v in {}.items()  # placeholder — competitive coverage not tracked yet
+        )
+        st.caption(f"ℹ️ Competitive coverage tracking coming soon. Check Supabase manually for now.")
+
+        source_url_c = st.text_input("Source URL (optional)", key="comp_url")
+        count_c      = st.slider("MCQ count", 3, 20, 8, key="comp_count")
+        force_c      = st.checkbox("⚡ Force regenerate", key="comp_force")
+
+        if st.button("🚀 Run Competitive Pipeline", type="primary", key="comp_submit"):
+            inputs = {
+                "authority": authority,
+                "exam":      exam,
+                "topic":     topic,
+                "count":     str(count_c),
+            }
+            if source_url_c: inputs["source_url"] = source_url_c
+            if force_c:      inputs["force"]      = "true"
+            _dispatch_workflow("ingest_competitive.yml", inputs)
+
+    # ── IT TAB ────────────────────────────────────────────────────────────────
+    with tab_it:
+        provider = st.selectbox("Provider", list(IT_TREE.keys()), key="it_provider")
+        certs    = list(IT_TREE[provider].keys())
+        cert     = st.selectbox("Certification", certs, key="it_cert")
+        domains  = IT_TREE[provider][cert]
+        domain   = st.selectbox("Domain / Topic", domains, key="it_domain")
+
+        st.caption("ℹ️ IT coverage tracking coming soon. Check Supabase manually for now.")
+
+        source_url_it = st.text_input("Source URL (optional)", key="it_url")
+        count_it      = st.slider("MCQ count", 3, 20, 6, key="it_count")
+        force_it      = st.checkbox("⚡ Force regenerate", key="it_force")
+
+        if st.button("🚀 Run IT Pipeline", type="primary", key="it_submit"):
+            inputs = {
+                "provider": provider,
+                "exam":     cert,
+                "topic":    domain,
+                "count":    str(count_it),
+            }
+            if source_url_it: inputs["source_url"] = source_url_it
+            if force_it:      inputs["force"]      = "true"
+            _dispatch_workflow("ingest_it.yml", inputs)
+
+    # ── Recent runs ───────────────────────────────────────────────────────────
+    st.markdown("---")
+    repo = st.secrets.get("GITHUB_REPO", "arkagimt/gyan-ai-pipeline")
+    st.caption(f"[📋 View all GitHub Actions runs →](https://github.com/{repo}/actions)")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE 4 — AGENT PROMPTS
+# PAGE 5 — AGENT PROMPTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def page_prompts():
     st.title("🤖 Agent Prompts")
-    st.caption("View and edit the system prompts stored in Supabase (Vault Pattern). Changes take effect on next pipeline run.")
+    st.caption(
+        "View and edit agent system prompts stored in Supabase (Vault Pattern). "
+        "Changes take effect on the next pipeline run."
+    )
 
     db = get_supabase()
 
@@ -613,44 +1194,48 @@ def page_prompts():
         return
 
     if not rows:
-        st.warning("No agent prompts found in Supabase. Run `scripts/setup.sql` first.")
+        st.warning("No agent prompts found. Seed the `agent_prompts` table in Supabase first.")
         return
 
-    agent_ids = [r["agent_id"] for r in rows]
-    selected  = st.selectbox("Select agent", agent_ids,
-                             format_func=lambda x: {
-                                 "sarbagya":    "সর্বজ্ঞ — Scout / Extractor",
-                                 "chitragupta": "চিত্রগুপ্ত — Validator",
-                                 "sutradhar":   "সূত্রধর — Content Creator",
-                             }.get(x, x))
+    agent_labels = {
+        "sarbagya":    "সর্বজ্ঞ — Scout / Extractor",
+        "chitragupta": "চিত্রগুপ্ত — Validator",
+        "sutradhar":   "সূত্রধর — Content Creator",
+    }
+
+    selected = st.selectbox(
+        "Select agent",
+        [r["agent_id"] for r in rows],
+        format_func=lambda x: agent_labels.get(x, x),
+    )
 
     row = next((r for r in rows if r["agent_id"] == selected), None)
     if not row:
         return
 
     st.markdown("---")
-    col_meta, col_controls = st.columns([3, 1])
 
+    col_meta, col_ctrl = st.columns([3, 1])
     with col_meta:
         st.markdown(
-            f"**Role:** {row.get('role','—')}  \n"
-            f"**Temp:** `{row.get('temperature','—')}` &nbsp;|&nbsp; "
-            f"**Max tokens:** `{row.get('max_tokens','—')}`"
+            f"**Role:** {row.get('role', '—')}  \n"
+            f"**Temp:** `{row.get('temperature', '—')}` &nbsp;|&nbsp; "
+            f"**Max tokens:** `{row.get('max_tokens', '—')}`"
         )
-
-    with col_controls:
+    with col_ctrl:
         edit_mode = st.toggle("✏️ Edit mode")
 
     if edit_mode:
         new_prompt = st.text_area(
             "System Prompt",
             value=row.get("system_prompt", ""),
-            height=400,
-            help="This is the exact system prompt the agent receives at runtime.",
+            height=420,
+            help="Exact system prompt sent to the LLM at runtime.",
         )
-        new_temp   = st.number_input("Temperature", 0.0, 2.0, float(row.get("temperature", 0.3)), step=0.05)
-        new_tokens = st.number_input("Max Tokens", 256, 8192, int(row.get("max_tokens", 4096)), step=256)
-
+        new_temp   = st.number_input("Temperature", 0.0, 2.0,
+                                     float(row.get("temperature", 0.3)), step=0.05)
+        new_tokens = st.number_input("Max Tokens", 256, 8192,
+                                     int(row.get("max_tokens", 4096)), step=256)
         if st.button("💾 Save to Supabase", type="primary"):
             try:
                 db.table("agent_prompts").update({
@@ -658,7 +1243,7 @@ def page_prompts():
                     "temperature":   new_temp,
                     "max_tokens":    new_tokens,
                 }).eq("agent_id", selected).execute()
-                st.success(f"✅ `{selected}` prompt updated. Next pipeline run will use this.")
+                st.success(f"✅ `{selected}` prompt updated. Next run will use this.")
                 st.rerun()
             except Exception as e:
                 st.error(f"Save failed: {e}")
@@ -666,7 +1251,7 @@ def page_prompts():
         st.text_area(
             "System Prompt (read-only)",
             value=row.get("system_prompt", ""),
-            height=400,
+            height=420,
             disabled=True,
         )
 
@@ -675,11 +1260,13 @@ def page_prompts():
 # ROUTER
 # ═══════════════════════════════════════════════════════════════════════════════
 
-if page == "📊 Dashboard":
-    page_dashboard()
+if page == "📊 Command Centre":
+    page_command_centre()
+elif page == "🗺️ Coverage Map":
+    page_coverage_map()
 elif page == "🔍 Triage Queue":
     page_triage()
-elif page == "🚀 Pipeline Control":
+elif page == "🚀 Smart Pipeline":
     page_pipeline()
 elif page == "🤖 Agent Prompts":
     page_prompts()
