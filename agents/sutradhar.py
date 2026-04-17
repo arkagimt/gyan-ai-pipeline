@@ -231,8 +231,18 @@ def run(report: ValidationReport) -> StudyPackage:
             )
 
             # ── Step 2: বিদূষক adversarial audit + repair ───────────────────
-            verified_mcqs = vidushak.verify_and_repair(
-                output.mcqs, taxonomy, taxonomy.label
+            # Phase 7: pass Sarbagya's extract so Vidushak can run the
+            # SOURCE_DISCONNECT grounding check + anchor repairs in the corpus.
+            # Only useful when source_type != llm_knowledge (otherwise no real
+            # corpus to ground against — Vidushak skips the grounding check).
+            grounding_extract = (
+                report.extract
+                if report.extract.source_type != "llm_knowledge"
+                else None
+            )
+            verified_mcqs, vidushak_audit = vidushak.verify_and_repair(
+                output.mcqs, taxonomy, taxonomy.label,
+                extract=grounding_extract,
             )
 
             # ── Step 3: Assemble final StudyPackage ───────────────────────────
@@ -241,10 +251,11 @@ def run(report: ValidationReport) -> StudyPackage:
                 notes    = output.notes,
                 mcqs     = verified_mcqs,
                 metadata = {
-                    "confidence":   report.confidence,
-                    "flags":        [f.value for f in report.flags],
-                    "source_type":  report.extract.source_type,
-                    "attempt":      attempt,
+                    "confidence":       report.confidence,
+                    "flags":            [f.value for f in report.flags],
+                    "source_type":      report.extract.source_type,
+                    "attempt":          attempt,
+                    "vidushak_audit":   vidushak_audit,
                 },
             )
 

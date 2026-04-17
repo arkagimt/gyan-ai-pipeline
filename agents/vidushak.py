@@ -19,6 +19,11 @@ Upgraded additions (v2):
      (e.g. English questions for WBBSE Bengali-medium students)
   6. AGE_INAPPROPRIATE  — question exceeds cognitive level for stated class
      (e.g. statistics/meta-questions for Class 1-2, bloom=analyze for Class 3)
+  7. SOURCE_DISCONNECT  — (Phase 7 RAG grounding) the MCQ answer cannot be
+     traced back to any fact/concept in Sarbagya's extract. Catches the
+     failure mode where an MCQ is fluent and well-formed but hallucinated
+     — unfaithful to the actual textbook content. Only runs when the
+     caller passes `extract=` (skipped when using LLM-knowledge mode).
 
 Pattern:  Guardrails AI "reask" (Apache 2.0) — LLM audits its own output
           and repairs genuine errors before they reach students.
@@ -30,7 +35,7 @@ from config import (
     MAX_RETRIES, get_agent_prompt, emit_agent, emit_progress,
 )
 from llm import call_llm
-from models.schemas import TaxonomySlice, MCQItem, MCQBatchVerification
+from models.schemas import TaxonomySlice, MCQItem, MCQBatchVerification, RawExtract
 
 
 # ── Verifier system prompt ────────────────────────────────────────────────────
@@ -63,6 +68,16 @@ Check each MCQ for these SPECIFIC issues only:
      • Class 5-8: Should be age-appropriate — flag only obvious overreach.
      • Class 9-12 & competitive: No restrictions, flag only genuine errors.
 
+  7. SOURCE_DISCONNECT   — (ONLY if a GROUNDING CORPUS section is provided)
+     the correct answer cannot be supported by any fact, concept, definition
+     or passage in the GROUNDING CORPUS. Examples to flag:
+       • Question asks a number/date that appears nowhere in the corpus
+       • Correct option names an entity never mentioned in the corpus
+       • Definition in the correct option contradicts the corpus's own definition
+     DO NOT flag if the answer is merely phrased differently — only flag
+     if a student who read only the corpus could NOT arrive at this answer.
+     Format the issue as: "SOURCE_DISCONNECT: <why it's ungrounded>"
+
 Do NOT flag:
   - Minor wording preferences
   - Difficulty level opinions
@@ -88,12 +103,47 @@ def _class_context(taxonomy: TaxonomySlice) -> str:
     return "CLASS: N/A"
 
 
+def _build_grounding_corpus(extract: RawExtract | None, max_chars: int = 3000) -> str:
+    """
+    Build a compact GROUNDING CORPUS section from Sarbagya's extract.
+    Truncates raw_text aggressively — facts/concepts/definitions are cheaper
+    signal than raw prose and anchor the grounding check.
+    Returns "" when extract is None (grounding check is skipped).
+    """
+    if extract is None:
+        return ""
+
+    parts: list[str] = ["GROUNDING CORPUS (Sarbagya's extract — answer MUST be supported here):"]
+
+    if extract.key_facts:
+        parts.append("  Facts:")
+        parts.extend(f"    • {f}" for f in extract.key_facts[:20])
+
+    if extract.core_concepts:
+        parts.append(f"  Concepts: {', '.join(extract.core_concepts[:20])}")
+
+    if extract.formulas:
+        parts.append(f"  Formulas: {', '.join(extract.formulas[:10])}")
+
+    if extract.definitions:
+        parts.append("  Definitions:")
+        for term, defn in list(extract.definitions.items())[:10]:
+            parts.append(f"    • {term} — {defn}")
+
+    if extract.raw_text:
+        snippet = extract.raw_text[:max_chars]
+        parts.append(f"\n  Raw-text excerpt (first {len(snippet)} chars):\n{snippet}")
+
+    return "\n".join(parts)
+
+
 # ── Prompt builders ───────────────────────────────────────────────────────────
 
 def _build_verification_prompt(
     mcqs: list[MCQItem],
     taxonomy: TaxonomySlice,
     label: str,
+    extract: RawExtract | None = None,
 ) -> str:
     mcq_text = "\n\n".join(
         f"MCQ #{i}:\n"
@@ -106,13 +156,22 @@ def _build_verification_prompt(
         f"  Difficulty: {m.difficulty}  |  Bloom: {m.bloom_level}"
         for i, m in enumerate(mcqs)
     )
+    corpus = _build_grounding_corpus(extract)
+    corpus_section = f"\n\n{corpus}\n" if corpus else ""
+
+    grounding_hint = (
+        '\n             "SOURCE_DISCONNECT: correct answer (5000 years) '
+        'appears nowhere in the grounding corpus"'
+        if extract is not None else ""
+    )
+
     return f"""
 Topic: {label}
 {_board_language_context(taxonomy)}
 {_class_context(taxonomy)}
 Segment: {taxonomy.segment.value}
-
-Review these {len(mcqs)} MCQs for factual, logical, language, or age-level errors:
+{corpus_section}
+Review these {len(mcqs)} MCQs for factual, logical, language, age-level, or grounding errors:
 
 {mcq_text}
 
@@ -123,7 +182,7 @@ For each MCQ return:
            Examples:
              "Option C (P = IV) is also a valid power formula — two correct answers"
              "Question is in English but board is WBBSE (Bengali-medium)"
-             "Asks about number of non-native speakers — meta-question, Class 1 student"
+             "Asks about number of non-native speakers — meta-question, Class 1 student"{grounding_hint}
 
 Set any_issues=true if ANY MCQ has verdict="has_issue".
 """.strip()
@@ -134,6 +193,7 @@ def _build_fix_prompt(
     issue: str,
     taxonomy: TaxonomySlice,
     label: str,
+    extract: RawExtract | None = None,
 ) -> str:
     lang_note = (
         "IMPORTANT: This is a WBBSE/WBCHSE Bengali-medium board. "
@@ -151,12 +211,27 @@ def _build_fix_prompt(
     elif taxonomy.class_num and taxonomy.class_num <= 4:
         age_note = "IMPORTANT: Class 3-4 student. No abstract concepts or statistics."
 
+    # When the issue is a grounding failure, the fixer MUST see the corpus
+    # and be told to anchor the new MCQ in a specific fact from it.
+    is_ungrounded = "SOURCE_DISCONNECT" in issue.upper() or "UNGROUNDED" in issue.upper()
+    grounding_section = ""
+    grounding_instruction = ""
+    if is_ungrounded and extract is not None:
+        corpus = _build_grounding_corpus(extract, max_chars=2000)
+        grounding_section = f"\n{corpus}\n"
+        grounding_instruction = (
+            "\nGROUNDING RULE: Pick ONE specific fact/concept/definition from the "
+            "GROUNDING CORPUS above and build the MCQ around it. The correct answer "
+            "MUST be directly traceable to that item. In reasoning_process, quote "
+            "the exact grounding fact you used."
+        )
+
     return f"""
 Topic: {label}
 Board: {taxonomy.board or 'N/A'}  |  Class: {taxonomy.class_num or 'N/A'}
 {lang_note}
 {age_note}
-
+{grounding_section}
 This MCQ has a quality issue that MUST be fixed: {issue}
 
 Original MCQ:
@@ -170,7 +245,7 @@ Original MCQ:
 
 Rewrite this MCQ to fix the issue.
 Keep the same sub-topic and difficulty level.
-Ensure reasoning_process and explanation address all 4 options.
+Ensure reasoning_process and explanation address all 4 options.{grounding_instruction}
 """.strip()
 
 
@@ -180,7 +255,8 @@ def verify_and_repair(
     mcqs:     list[MCQItem],
     taxonomy: TaxonomySlice,
     label:    str,
-) -> list[MCQItem]:
+    extract:  RawExtract | None = None,
+) -> tuple[list[MCQItem], dict]:
     """
     বিদূষক's adversarial self-critique pass.
 
@@ -188,31 +264,56 @@ def verify_and_repair(
     Ask the LLM to audit Sutradhar's output. If issues are found,
     repair them individually before the content reaches triage.
 
-    Now language-aware (WBBSE/WBCHSE → Bengali) and age-aware
-    (Class 1-2 → concrete/simple only).
+    Language-aware (WBBSE/WBCHSE → Bengali), age-aware (Class 1-2 →
+    concrete/simple only), and — when `extract` is supplied —
+    grounding-aware (Phase 7): SOURCE_DISCONNECT check + corpus-anchored
+    repair loop.
 
-    Returns the same-length list with repaired MCQs substituted.
-    Never blocks pipeline — returns originals on verifier failure.
+    Returns:
+        (repaired_mcqs, audit)
+        audit is a small dict suitable for StudyPackage.metadata, e.g.
+          {
+            "total":                N,
+            "issues_found":         k,
+            "repaired":             r,
+            "repair_failed":        f,
+            "grounding_enabled":    bool,
+            "grounding_issues":     g,   # subset of k that were SOURCE_DISCONNECT
+            "issue_samples":        [...up to 5 human-readable strings...],
+          }
+
+    Never blocks pipeline — returns originals + audit on verifier failure.
     """
     emit_agent("বিদূষক", f"Auditing {len(mcqs)} MCQs for: {label}")
+
+    audit: dict = {
+        "total":             len(mcqs),
+        "issues_found":      0,
+        "repaired":          0,
+        "repair_failed":     0,
+        "grounding_enabled": extract is not None,
+        "grounding_issues":  0,
+        "issue_samples":     [],
+    }
 
     # ── Step 1: Audit ─────────────────────────────────────────────────────────
     try:
         verification: MCQBatchVerification = call_llm(
             system         = _VERIFIER_SYSTEM,
-            user           = _build_verification_prompt(mcqs, taxonomy, label),
+            user           = _build_verification_prompt(mcqs, taxonomy, label, extract),
             response_model = MCQBatchVerification,
             temperature    = 0.1,   # low temp — verification needs precision
-            max_tokens     = 1024,
+            max_tokens     = 1536 if extract is not None else 1024,
             max_retries    = 2,
         )
     except Exception as e:
         emit_progress(f"[বিদূষক] Audit skipped — verifier error: {e}")
-        return mcqs  # safe fallback — never block on verifier failure
+        audit["verifier_error"] = str(e)[:200]
+        return mcqs, audit
 
     if not verification.any_issues:
         emit_agent("বিদূষক", f"✓ All {len(mcqs)} MCQs passed audit")
-        return mcqs
+        return mcqs, audit
 
     # ── Step 2: Repair flagged MCQs ───────────────────────────────────────────
     issues = {
@@ -220,7 +321,18 @@ def verify_and_repair(
         for v in verification.verifications
         if v.verdict == "has_issue" and v.issue
     }
-    emit_agent("বিদূষক", f"Found {len(issues)} issue(s) — repairing")
+    audit["issues_found"]    = len(issues)
+    audit["grounding_issues"] = sum(
+        1 for i in issues.values() if "SOURCE_DISCONNECT" in i.upper()
+    )
+    audit["issue_samples"] = [i[:160] for i in list(issues.values())[:5]]
+
+    emit_agent(
+        "বিদূষক",
+        f"Found {len(issues)} issue(s) — repairing "
+        f"({audit['grounding_issues']} grounding)" if audit["grounding_issues"]
+        else f"Found {len(issues)} issue(s) — repairing"
+    )
 
     fixed = list(mcqs)
     prompt_cfg = get_agent_prompt("sutradhar")   # fixer uses sutradhar's creative prompt
@@ -231,15 +343,17 @@ def verify_and_repair(
         try:
             repaired: MCQItem = call_llm(
                 system         = prompt_cfg.system_prompt,
-                user           = _build_fix_prompt(fixed[idx], issue_desc, taxonomy, label),
+                user           = _build_fix_prompt(fixed[idx], issue_desc, taxonomy, label, extract),
                 response_model = MCQItem,
                 temperature    = 0.4,
                 max_tokens     = 800,
                 max_retries    = 2,
             )
             fixed[idx] = repaired
+            audit["repaired"] += 1
             emit_progress(f"[বিদূষক] MCQ #{idx} repaired — was: {issue_desc[:80]}")
         except Exception as e:
+            audit["repair_failed"] += 1
             emit_progress(f"[বিদূষক] MCQ #{idx} repair failed, keeping original: {e}")
 
-    return fixed
+    return fixed, audit
