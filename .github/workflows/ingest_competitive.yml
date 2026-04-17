@@ -44,12 +44,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run pipeline — সর্বজ্ঞ → চিত্রগুপ্ত → সূত্রধর
+      - name: Run pipeline — সর্বজ্ঞ → চিত্রগুপ্ত → সূত্রধর → বিদূষক → ধর্মরক্ষক
         env:
           SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           GROQ_API_KEY:         ${{ secrets.GROQ_API_KEY }}
           SARVAM_API_KEY:       ${{ secrets.SARVAM_API_KEY }}
+          GROQ_GUARD_MODEL:     llama-guard-3-8b
+          PHOENIX_ENDPOINT:     ${{ secrets.PHOENIX_ENDPOINT }}
         run: |
           ARGS="--segment competitive \
                 --authority ${{ github.event.inputs.authority }} \
