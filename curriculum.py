@@ -3,22 +3,33 @@ Gyan AI — Curriculum Data
 ==========================
 Single source of truth for all curriculum constants used across the pipeline.
 
+Scope decisions: see SCOPE_DECISIONS.md at this repo root for board
+inclusion/exclusion rationale (NIOS=IN, Madrasa=OUT, IB/IGCSE=PARKED, etc.)
+
 Consumers:
   - agents/ganak.py      (topic priority analysis)
   - admin/streamlit_app.py (coverage map + smart pipeline UI)
   - gyan_pipeline.py      (taxonomy validation)
 
 Structure:
-  CURRICULUM        — school boards  : {board: {class_num: [subjects]}}
-  CLASS_PRIORITY    — class urgency  : {class_num: priority_int}
-  COMPETITIVE_TREE  — competitive    : {authority: {exam: [topics]}}
-  IT_TREE           — IT certs       : {provider: {cert: [domains]}}
-  BENGALI_BOARDS    — boards needing Bengali-language MCQs
+  CURRICULUM         — school boards   : {board: {class_num: [subjects]}}
+  CLASS_PRIORITY     — class urgency   : {class_num: priority_int}
+  ENTRANCE_TREE      — entrance exams  : {authority: {exam: [topics]}}
+  RECRUITMENT_TREE   — recruitment     : {authority: {exam: [topics]}}
+  COMPETITIVE_TREE   — combined alias  : ENTRANCE_TREE + RECRUITMENT_TREE (backward compat)
+  IT_TREE            — IT certs        : {provider: {cert: [domains]}}
+  BENGALI_BOARDS     — boards needing Bengali-language MCQs
 """
 
 from __future__ import annotations
 
 # ── School curriculum ─────────────────────────────────────────────────────────
+# Scope decisions:
+#   ✅ IN: CBSE, ICSE, WBBSE, WBCHSE, NIOS (future)
+#   ❌ OUT: Madrasa boards (different pedagogical framework)
+#   ⏸ PARKED: Anglo-Indian boards, IB/Cambridge IGCSE
+#   🔜 FUTURE: UP, Maharashtra, Tamil Nadu, Karnataka state boards
+# See SCOPE_DECISIONS.md for full rationale.
 
 CURRICULUM: dict[str, dict[int, list[str]]] = {
     "WBBSE": {
@@ -89,9 +100,125 @@ BENGALI_BOARDS: set[str] = {"WBBSE", "WBCHSE"}
 MCQ_TARGET_PER_SLOT: int = 10
 
 
-# ── Competitive exams ─────────────────────────────────────────────────────────
+# ── Entrance exams (national-level, not govt recruitment) ─────────────────────
+# JEE/NEET/CAT etc. — these are entrance exams for higher education / courses,
+# NOT government job recruitment. Shared across all states (central scope).
 
-COMPETITIVE_TREE: dict[str, dict[str, list[str]]] = {
+ENTRANCE_TREE: dict[str, dict[str, list[str]]] = {
+    "NTA": {
+        "JEE Main": [
+            "Mathematics — Algebra & Trigonometry",
+            "Mathematics — Calculus & Coordinate Geometry",
+            "Physics — Mechanics & Waves",
+            "Physics — Electromagnetism & Optics",
+            "Physics — Modern Physics & Thermodynamics",
+            "Chemistry — Physical Chemistry",
+            "Chemistry — Organic Chemistry",
+            "Chemistry — Inorganic Chemistry",
+        ],
+        "JEE Advanced": [
+            "Mathematics — Advanced Algebra",
+            "Mathematics — Differential Equations & Calculus",
+            "Physics — Classical Mechanics",
+            "Physics — Electrodynamics & Optics",
+            "Chemistry — Physical & Organic Combined",
+            "Chemistry — Inorganic & Analytical",
+        ],
+        "NEET UG": [
+            "Physics — Mechanics",
+            "Physics — Electrostatics & Magnetism",
+            "Physics — Optics & Modern Physics",
+            "Chemistry — Physical Chemistry",
+            "Chemistry — Organic Chemistry",
+            "Chemistry — Inorganic Chemistry",
+            "Biology — Botany (Plant Physiology, Genetics)",
+            "Biology — Zoology (Human Physiology, Evolution)",
+        ],
+        "CUET UG": [
+            "General Awareness & Current Affairs",
+            "English Language",
+            "Quantitative Aptitude",
+            "Logical Reasoning",
+            "Domain Subjects (varies)",
+        ],
+    },
+    "IIM": {
+        "CAT": [
+            "Quantitative Aptitude",
+            "Data Interpretation & Logical Reasoning",
+            "Verbal Ability & Reading Comprehension",
+        ],
+        "XAT": [
+            "Verbal & Logical Ability",
+            "Decision Making",
+            "Quantitative Ability & Data Interpretation",
+            "General Knowledge",
+        ],
+    },
+    "GATE": {
+        "GATE (CS/IT)": [
+            "Engineering Mathematics",
+            "Digital Logic & Computer Organization",
+            "Data Structures & Algorithms",
+            "Operating Systems",
+            "Databases",
+            "Computer Networks",
+            "Theory of Computation",
+            "Compiler Design",
+        ],
+        "GATE (ECE)": [
+            "Engineering Mathematics",
+            "Networks, Signals & Systems",
+            "Electronic Devices & Circuits",
+            "Analog & Digital Circuits",
+            "Communications & Electromagnetics",
+        ],
+    },
+    "WBJEE": {
+        "WBJEE (Engineering)": [
+            "Mathematics — Algebra & Trigonometry",
+            "Mathematics — Calculus & Coordinate Geometry",
+            "Physics — Mechanics & Thermodynamics",
+            "Physics — Electromagnetism & Optics",
+            "Chemistry — Physical & Organic",
+            "Chemistry — Inorganic",
+        ],
+    },
+    "NDA": {
+        "NDA (Mathematics)": [
+            "Algebra",
+            "Matrices & Determinants",
+            "Trigonometry",
+            "Calculus",
+            "Statistics & Probability",
+        ],
+        "NDA (General Ability)": [
+            "Physics",
+            "Chemistry",
+            "General Science",
+            "History",
+            "Geography",
+            "Current Affairs",
+        ],
+    },
+    "CLAT": {
+        "CLAT UG": [
+            "English Language",
+            "Current Affairs & General Knowledge",
+            "Legal Reasoning",
+            "Logical Reasoning",
+            "Quantitative Techniques",
+        ],
+    },
+}
+
+
+# ── Recruitment exams (govt job recruitment) ──────────────────────────────────
+# WBPSC/SSC/UPSC/Railway etc. — these are for government job recruitment.
+# State-level exams are scoped by region; central exams (SSC, UPSC, Railway)
+# are shared across all states.
+
+RECRUITMENT_TREE: dict[str, dict[str, list[str]]] = {
     "WBPSC": {
         "WBCS Prelims": [
             "Indian History — Ancient & Medieval",
@@ -192,6 +319,9 @@ COMPETITIVE_TREE: dict[str, dict[str, list[str]]] = {
         ],
     },
 }
+
+# Backward-compatible combined alias — scripts referencing COMPETITIVE_TREE still work
+COMPETITIVE_TREE: dict[str, dict[str, list[str]]] = {**ENTRANCE_TREE, **RECRUITMENT_TREE}
 
 
 # ── IT certifications ─────────────────────────────────────────────────────────

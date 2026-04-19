@@ -23,13 +23,28 @@ from pydantic import BaseModel, Field
 
 class Segment(str, Enum):
     school      = "school"
-    competitive = "competitive"
+    competitive = "competitive"   # backward compat — legacy alias for entrance+recruitment
+    entrance    = "entrance"      # JEE, NEET, CAT, GATE, WBJEE, NDA, CLAT, CUET
+    recruitment = "recruitment"   # WBPSC, SSC, UPSC, Railway, WBSSC
     it          = "it"
 
 class Importance(str, Enum):
     critical = "critical"
     high     = "high"
     normal   = "normal"
+
+class Scope(str, Enum):
+    """Geographic scope of a content item."""
+    central       = "central"       # CBSE, UPSC, SSC — national
+    state         = "state"         # WBBSE, WBPSC — state-specific
+    international = "international" # AWS, Azure — global IT certs
+
+class Nature(str, Enum):
+    """Classification of what kind of exam/content this is."""
+    entrance    = "entrance"    # JEE, NEET, CAT — entrance to institutions
+    recruitment = "recruitment" # WBCS, SSC CGL — govt job recruitment
+    board       = "board"       # WBBSE Madhyamik, CBSE Class 10 — school boards
+    cert        = "cert"        # AWS SAA, AZ-900 — professional certifications
 
 
 # ── Pipeline Input ────────────────────────────────────────────────────────────
@@ -42,22 +57,25 @@ class TaxonomySlice(BaseModel):
     class_num: Optional[int] = None   # 1–12
     subject:   Optional[str] = None   # "Physical Science"
     chapter:   Optional[str] = None   # "electricity" (optional — chapter-level grounding)
-    # competitive
-    authority: Optional[str] = None   # "WBPSC"
-    exam:      Optional[str] = None   # "WBCS Prelims"
+    # competitive / entrance / recruitment
+    authority: Optional[str] = None   # "WBPSC" | "NTA" | "IIM"
+    exam:      Optional[str] = None   # "WBCS Prelims" | "JEE Main"
     topic:     Optional[str] = None   # "History of India"
     # it
     provider:  Optional[str] = None   # "AWS"
     count:     int = Field(default=5, ge=1, le=20)
     source_url: Optional[str] = None  # optional — raw content source
     source_pdf: Optional[str] = None  # optional — local PDF path
+    # metadata classification (Phase 1.3)
+    scope:     Optional[Scope]  = None  # central | state | international
+    nature:    Optional[Nature] = None  # entrance | recruitment | board | cert
 
     @property
     def label(self) -> str:
         """Human-readable label for logging."""
         if self.segment == Segment.school:
             parts = [self.board, f"Class {self.class_num}", self.subject, self.chapter]
-        elif self.segment == Segment.competitive:
+        elif self.segment in (Segment.competitive, Segment.entrance, Segment.recruitment):
             parts = [self.authority, self.exam, self.topic]
         else:
             parts = [self.provider, self.exam, self.topic]
