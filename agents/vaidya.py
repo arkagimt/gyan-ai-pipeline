@@ -211,10 +211,16 @@ def _check_triage_rate() -> CheckResult:
 
 # ── Main API ──────────────────────────────────────────────────────────────────
 
-def run_healthcheck() -> HealthReport:
+def run_healthcheck(*, persist: bool = False, source: str = "cli") -> HealthReport:
     """
     Runs all checks sequentially. Returns a HealthReport.
-    Safe to call on any schedule — no side effects.
+    Safe to call on any schedule — no side effects beyond optional persistence.
+
+    Args:
+        persist: if True, writes the report to public.vaidya_health_log.
+                 Silently no-ops if the table doesn't exist yet (safe first-run).
+        source:  tag stored with the row — 'cli' | 'streamlit' | 'cron'. Useful
+                 for filtering automated runs out of admin-triggered runs.
     """
     emit_agent("বৈদ্য", "Running pipeline health check...")
     report = HealthReport(started_at=datetime.now(timezone.utc).isoformat())
@@ -234,6 +240,9 @@ def run_healthcheck() -> HealthReport:
         status = "✓" if c.ok else ("⊘ skipped" if c.skipped else "✗")
         emit_progress(f"[বৈদ্য] {status} {c.name} — {c.detail}")
 
+    if persist:
+        _persist_report(report, source=source)
+
     emit_agent(
         "বৈদ্য",
         f"Health check complete — fail_count={report.fail_count}, all_ok={report.all_ok}",
@@ -241,4 +250,51 @@ def run_healthcheck() -> HealthReport:
     return report
 
 
-__all__ = ["run_healthcheck", "HealthReport", "CheckResult"]
+# ── Persistence (optional — table may not exist yet on first run) ─────────────
+
+def _persist_report(report: HealthReport, source: str = "cli") -> None:
+    """
+    Write the report to public.vaidya_health_log. Swallows errors so a
+    missing table / transient DB blip never breaks the health-check itself —
+    Vaidya's job is to observe, not to fail loudly when persisting observations.
+    """
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return
+    try:
+        from supabase import create_client
+        db = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        db.table("vaidya_health_log").insert({
+            "run_at":     report.ended_at,
+            "all_ok":     report.all_ok,
+            "fail_count": report.fail_count,
+            "source":     source,
+            "report":     report.to_dict(),
+        }).execute()
+    except Exception as e:
+        # Intentional: persistence failure must not mask the actual health report
+        emit_progress(f"[বৈদ্য] could not persist report: {type(e).__name__}: {e}"[:200])
+
+
+def recent_reports(limit: int = 20) -> list[dict]:
+    """
+    Returns the last `limit` rows from vaidya_health_log, newest first.
+    Empty list on error / missing table — caller decides how to render that.
+    """
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return []
+    try:
+        from supabase import create_client
+        db = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        rows = (
+            db.table("vaidya_health_log")
+            .select("id, run_at, all_ok, fail_count, source, report")
+            .order("run_at", desc=True)
+            .limit(limit)
+            .execute()
+        ).data or []
+        return rows
+    except Exception:
+        return []
+
+
+__all__ = ["run_healthcheck", "recent_reports", "HealthReport", "CheckResult"]

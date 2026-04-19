@@ -25,10 +25,17 @@ from agents import vaidya
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run বৈদ্য pipeline health check.")
     ap.add_argument("--json", action="store_true", help="Emit HealthReport as JSON on stdout.")
+    ap.add_argument("--no-persist", action="store_true",
+                    help="Don't write to vaidya_health_log (default: persist).")
+    ap.add_argument("--source", default="cli",
+                    help="Tag stored with the row — 'cli' | 'cron' | 'streamlit'.")
     args = ap.parse_args()
 
     try:
-        report = vaidya.run_healthcheck()
+        report = vaidya.run_healthcheck(
+            persist = not args.no_persist,
+            source  = args.source,
+        )
     except Exception as e:
         print(f"fatal: {type(e).__name__}: {e}", file=sys.stderr)
         return 2

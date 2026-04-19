@@ -499,6 +499,49 @@ def page_command_centre():
                 with st.expander("Full receipt"):
                     st.json(receipt.to_dict())
 
+    # ── বৈদ্য — Pipeline health check (Phase 16) ─────────────────────────────
+    with st.expander("🩺 **বৈদ্য — Pipeline Health**  ·  Groq / Sarvam / Supabase / 24h triage rate", expanded=False):
+        from agents import vaidya as _vaidya
+
+        vc1, vc2 = st.columns([1, 3])
+        if vc1.button("🩺 Run health check", key="vaidya_run"):
+            with st.spinner("Vaidya probing dependencies…"):
+                rpt = _vaidya.run_healthcheck(persist=True, source="streamlit")
+            if rpt.all_ok:
+                st.success(f"✅ All {len(rpt.checks)} checks green")
+            else:
+                st.error(f"⚠️ {rpt.fail_count} check(s) failing")
+            # Per-check table — exclude the raw dict noise
+            st.dataframe(
+                [
+                    {
+                        "Check":   c.name,
+                        "Status":  "✓" if c.ok else ("⊘" if c.skipped else "✗"),
+                        "Latency": f"{c.latency_ms:.0f} ms" if c.latency_ms is not None else "—",
+                        "Detail":  c.detail,
+                    }
+                    for c in rpt.checks
+                ],
+                use_container_width=True,
+                hide_index=True,
+            )
+
+        # History strip — last 10 runs
+        history = _vaidya.recent_reports(limit=10)
+        if history:
+            vc2.caption("**Last 10 runs** (newest → oldest)")
+            # Compact status strip — one emoji per run, green=ok / red=fail
+            strip = " ".join("🟢" if h.get("all_ok") else "🔴" for h in history)
+            vc2.markdown(f"<div style='font-size:1.4rem'>{strip}</div>", unsafe_allow_html=True)
+            latest = history[0]
+            vc2.caption(
+                f"Latest: **{latest.get('run_at','?')[:19]}Z** · "
+                f"source=`{latest.get('source','?')}` · "
+                f"fails=`{latest.get('fail_count',0)}`"
+            )
+        else:
+            vc2.caption("_No health history yet. Run once, or run `scripts/setup_health_log.sql` in Supabase._")
+
     st.markdown("---")
 
     # ── Charts ────────────────────────────────────────────────────────────────
