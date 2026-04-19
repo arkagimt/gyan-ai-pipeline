@@ -1,17 +1,25 @@
 """
-LLM Client — Multi-provider, Instructor-patched
-================================================
+LLM Client — Multi-provider, Instructor-patched, Router-based
+=============================================================
 Single source of truth for all LLM calls in the pipeline.
 
-Providers:
-  • Groq / Llama-3.3-70b  — default for all English content
+Providers (today):
+  • Groq / Llama-3.3-70b  — default for English + fallback for everything
   • Sarvam-M               — routed for Bengali content (WBBSE / WBCHSE boards)
                              Sarvam is purpose-built for Indic languages;
                              dramatically better Bengali than any English-first LLM.
 
-Routing:
-  call_llm(..., language="bn") → Sarvam-M (with Groq fallback on failure)
-  call_llm(...)                → Groq / Llama-3.3-70b (default)
+Providers (ready to register — not wired by default):
+  • Anthropic Claude       — add via register_provider("anthropic", ...)
+  • OpenAI GPT-4o          — add via register_provider("openai", ...)
+
+Router (Phase 19):
+  call_llm(..., language="bn")     → route("bn") → [Sarvam, Groq] in order
+  call_llm(..., model_hint="groq") → route(model_hint="groq") → [Groq] only
+  call_llm(...)                    → route(default) → [Groq]
+
+Each provider in the returned chain is tried until one succeeds.
+Registering a new provider is ONE function call — no edits to call_llm.
 
 Observability:
   Set PHOENIX_ENDPOINT env var to enable Arize Phoenix tracing.
@@ -27,7 +35,8 @@ References:
 
 from __future__ import annotations
 import functools
-from typing import TypeVar
+from dataclasses import dataclass, field
+from typing import Any, Callable, Protocol, TypeVar
 
 import instructor
 from groq import Groq
@@ -48,9 +57,8 @@ T = TypeVar("T")
 def _setup_tracing() -> None:
     """
     Instruments all LLM calls with Arize Phoenix if PHOENIX_ENDPOINT is set.
-    Completely silent / no-op if:
-      • PHOENIX_ENDPOINT env var is not set
-      • arize-phoenix-otel or openinference packages are not installed
+    Completely silent / no-op if PHOENIX_ENDPOINT isn't set, or if the
+    openinference packages aren't installed.
     Install: pip install arize-phoenix-otel openinference-instrumentation-groq
     """
     if not PHOENIX_ENDPOINT:
@@ -65,7 +73,6 @@ def _setup_tracing() -> None:
             BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{PHOENIX_ENDPOINT}/v1/traces"))
         )
 
-        # Groq instrumentation (default LLM + Llama Guard 3 safety calls)
         instrumented: list[str] = []
         try:
             from openinference.instrumentation.groq import GroqInstrumentor
@@ -74,13 +81,19 @@ def _setup_tracing() -> None:
         except ImportError:
             pass
 
-        # OpenAI instrumentation covers Sarvam-M (Bengali routing uses the
-        # OpenAI-compatible client against api.sarvam.ai/v1). Without this,
-        # the entire Bengali traffic — the whole point of Sarvam — is invisible.
+        # OpenAI instrumentation covers Sarvam-M (OpenAI-compatible client).
         try:
             from openinference.instrumentation.openai import OpenAIInstrumentor
             OpenAIInstrumentor().instrument(tracer_provider=provider)
             instrumented.append("openai/sarvam")
+        except ImportError:
+            pass
+
+        # Anthropic instrumentation — ready for when Claude is registered.
+        try:
+            from openinference.instrumentation.anthropic import AnthropicInstrumentor
+            AnthropicInstrumentor().instrument(tracer_provider=provider)
+            instrumented.append("anthropic")
         except ImportError:
             pass
 
@@ -92,7 +105,8 @@ def _setup_tracing() -> None:
         else:
             emit_progress(
                 "[tracing] Phoenix endpoint set but no instrumentors installed — skipping. "
-                "Install: pip install openinference-instrumentation-groq openinference-instrumentation-openai"
+                "Install: pip install openinference-instrumentation-groq "
+                "openinference-instrumentation-openai"
             )
     except ImportError:
         emit_progress(
@@ -112,32 +126,68 @@ def _ensure_tracing() -> None:
         _tracing_initialized = True
 
 
-# ── Groq instructor client (singleton) ───────────────────────────────────────
+# ── Provider protocol + registry (Phase 19) ───────────────────────────────────
+
+class _InstructorClient(Protocol):
+    """Minimal duck type — any instructor-patched client with chat.completions.create."""
+    @property
+    def chat(self) -> Any: ...
+
+
+@dataclass
+class Provider:
+    """
+    A registered LLM provider.
+
+    Fields:
+      name         — unique key, e.g. "groq" | "sarvam" | "anthropic"
+      model        — default model id for this provider
+      client_factory — lazy callable returning an instructor-patched client, or
+                       None if the provider is not configured (missing API key).
+                       Factory is cached on first successful call.
+      supports_languages — tuple of language codes this provider is preferred for.
+                           Empty tuple = fallback-only.
+    """
+    name:               str
+    model:              str
+    client_factory:     Callable[[], _InstructorClient | None]
+    supports_languages: tuple[str, ...] = ()
+    # Cached client — populated lazily by _get_client
+    _client:            Any = field(default=None, repr=False)
+
+    def get_client(self) -> _InstructorClient | None:
+        if self._client is None:
+            self._client = self.client_factory()
+        return self._client
+
+
+_PROVIDERS: dict[str, Provider] = {}
+
+
+def register_provider(provider: Provider) -> None:
+    """Register a provider. Safe to call multiple times — later calls replace."""
+    _PROVIDERS[provider.name] = provider
+
+
+def list_providers() -> list[str]:
+    """Names of all registered providers (configured + not-yet-configured)."""
+    return list(_PROVIDERS.keys())
+
+
+# ── Built-in providers ────────────────────────────────────────────────────────
 
 @functools.lru_cache(maxsize=1)
-def _get_groq_client() -> instructor.Instructor:
-    """
-    Instructor-patched Groq client.
-    Mode.JSON = Groq native JSON mode + Pydantic schema injection + retry.
-    """
+def _make_groq_client() -> _InstructorClient | None:
+    if not GROQ_API_KEY:
+        return None
     return instructor.from_groq(
         Groq(api_key=GROQ_API_KEY),
         mode=instructor.Mode.JSON,
     )
 
 
-# ── Sarvam instructor client (singleton) ─────────────────────────────────────
-
 @functools.lru_cache(maxsize=1)
-def _get_sarvam_client() -> instructor.Instructor | None:
-    """
-    Instructor-patched Sarvam client via OpenAI-compatible endpoint.
-    Returns None if SARVAM_API_KEY is not configured.
-
-    Sarvam-M is purpose-built for Indic languages including Bengali.
-    Produces dramatically better Bengali MCQs than Llama-3.3-70B.
-    See: https://www.sarvam.ai/
-    """
+def _make_sarvam_client() -> _InstructorClient | None:
     if not SARVAM_API_KEY:
         return None
     try:
@@ -151,7 +201,64 @@ def _get_sarvam_client() -> instructor.Instructor | None:
         return None
 
 
-# ── Main call function ────────────────────────────────────────────────────────
+# Register built-ins at import time.
+register_provider(Provider(
+    name               = "groq",
+    model              = GROQ_MODEL,
+    client_factory     = _make_groq_client,
+    supports_languages = ("en",),     # preferred for English; universal fallback
+))
+register_provider(Provider(
+    name               = "sarvam",
+    model              = SARVAM_MODEL,
+    client_factory     = _make_sarvam_client,
+    supports_languages = ("bn", "hi", "ta", "te", "ml", "kn", "gu", "mr"),  # Indic
+))
+
+
+# ── Routing ───────────────────────────────────────────────────────────────────
+
+def route(
+    language:   str        = "en",
+    model_hint: str | None = None,
+) -> list[Provider]:
+    """
+    Return the ordered list of providers to try for this call.
+    Callers iterate over this list; first successful response wins.
+
+    Rules (in priority order):
+      1. If model_hint is supplied and registered → return [that provider] only.
+         (Hard override — no fallback. Caller asked for specific provider.)
+      2. Otherwise: all providers supporting `language`, in registration order,
+         followed by all other *configured* providers as fallback.
+      3. Unconfigured providers (client_factory → None) are filtered out.
+
+    Design notes:
+      - Fallback lets Sarvam→Groq work out of the box.
+      - Hard override lets eval harness pin a specific model for reproducibility.
+      - Unknown language silently falls through to fallback (no exception).
+    """
+    if model_hint:
+        p = _PROVIDERS.get(model_hint)
+        if p and p.get_client() is not None:
+            return [p]
+        # Unknown / unconfigured hint → ignore hint, fall through to language routing
+        emit_progress(f"[llm/router] model_hint='{model_hint}' not available — using language routing")
+
+    primary:  list[Provider] = []
+    fallback: list[Provider] = []
+    for p in _PROVIDERS.values():
+        if p.get_client() is None:
+            continue
+        if language in p.supports_languages:
+            primary.append(p)
+        else:
+            fallback.append(p)
+
+    return primary + fallback
+
+
+# ── Main call function (public API — signature preserved) ─────────────────────
 
 def call_llm(
     system:         str,
@@ -160,57 +267,62 @@ def call_llm(
     temperature:    float = 0.3,
     max_tokens:     int   = 4096,
     max_retries:    int   = 3,
-    language:       str   = "en",   # "bn" → route to Sarvam-M for Bengali
+    language:       str   = "en",
+    model_hint:     str | None = None,   # Phase 19: optional hard override
 ) -> T:
     """
-    Unified LLM call with automatic provider routing.
+    Unified LLM call with router-based provider selection.
 
-    language="bn"  → tries Sarvam-M first (Indic-native), falls back to Groq.
-    language="en"  → uses Groq / Llama-3.3-70b directly.
+    Backwards-compatible: existing `call_llm(..., language="bn")` calls keep
+    working. New `model_hint` arg is for eval harness / debugging — pin a
+    specific provider regardless of language.
 
-    On each attempt:
+    On each provider attempt:
       1. Sends system + user messages with JSON mode.
       2. instructor extracts JSON and validates against response_model.
-      3. If validation fails, instructor sends the Pydantic error back
-         to the LLM for self-correction.
-      4. After max_retries exhausted, raises InstructorRetryException.
+      3. If validation fails, instructor retries up to max_retries.
+      4. On any exception, the NEXT provider in the router chain is tried.
+      5. Final failure raises the last provider's exception.
     """
     _ensure_tracing()
 
-    # ── Bengali routing → Sarvam-M ────────────────────────────────────────────
-    if language == "bn":
-        sarvam = _get_sarvam_client()
-        if sarvam:
-            try:
-                return sarvam.chat.completions.create(
-                    model          = SARVAM_MODEL,
-                    messages       = [
-                        {"role": "system", "content": system},
-                        {"role": "user",   "content": user},
-                    ],
-                    response_model = response_model,
-                    temperature    = temperature,
-                    max_tokens     = max_tokens,
-                    max_retries    = max_retries,
-                )
-            except Exception as e:
-                emit_progress(
-                    f"[llm] Sarvam-M failed ({type(e).__name__}: {str(e)[:80]}) "
-                    f"— falling back to Groq"
-                )
-        else:
-            emit_progress("[llm] SARVAM_API_KEY not set — using Groq for Bengali content")
+    chain = route(language=language, model_hint=model_hint)
+    if not chain:
+        raise RuntimeError(
+            "No LLM provider available. Set GROQ_API_KEY (required) or "
+            "SARVAM_API_KEY (Bengali content). Check `llm.list_providers()`."
+        )
 
-    # ── Default → Groq / Llama ────────────────────────────────────────────────
-    client = _get_groq_client()
-    return client.chat.completions.create(
-        model          = GROQ_MODEL,
-        messages       = [
-            {"role": "system", "content": system},
-            {"role": "user",   "content": user},
-        ],
-        response_model = response_model,
-        temperature    = temperature,
-        max_tokens     = max_tokens,
-        max_retries    = max_retries,
-    )
+    last_error: Exception | None = None
+    for idx, provider in enumerate(chain):
+        client = provider.get_client()
+        if client is None:
+            continue
+        try:
+            return client.chat.completions.create(
+                model          = provider.model,
+                messages       = [
+                    {"role": "system", "content": system},
+                    {"role": "user",   "content": user},
+                ],
+                response_model = response_model,
+                temperature    = temperature,
+                max_tokens     = max_tokens,
+                max_retries    = max_retries,
+            )
+        except Exception as e:
+            last_error = e
+            # Only log fallback noise if there's actually a next provider to try.
+            if idx + 1 < len(chain):
+                next_name = chain[idx + 1].name
+                emit_progress(
+                    f"[llm/{provider.name}] failed ({type(e).__name__}: {str(e)[:80]}) "
+                    f"— falling back to {next_name}"
+                )
+
+    # Exhausted the chain
+    assert last_error is not None
+    raise last_error
+
+
+__all__ = ["call_llm", "route", "Provider", "register_provider", "list_providers"]

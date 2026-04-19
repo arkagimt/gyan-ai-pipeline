@@ -58,9 +58,9 @@ Legend:  ✅ shipped   🔨 in-progress   ⏸ data-gated   🟡 unblocked / queu
 | Phase | Name | Status | Notes |
 |-------|------|--------|-------|
 | 16 | Vaidya — pipeline health check   | ✅ | `agents/vaidya.py` + `scripts/run_vaidya.py`. Cron-ready. |
-| 17 | Bhashacharya — language QA       | 🟡 | Vidushak already covers language_mismatch. Incremental. |
+| 17 | Bhashacharya — Bengali language QA | ✅ | `agents/bhashacharya.py`. Second-opinion on Vidushak for WBBSE/WBCHSE. Non-blocking. |
 | 18 | Eval harness (Vidushak vs bank)  | ✅ | `scripts/run_eval.py`. Prereq for Phase 9. |
-| 19 | RouteLLM — cost-aware routing    | 🟡 | Partial: `llm.py` already routes Bengali → Sarvam. Formalise later. |
+| 19 | Pluggable LLM router             | ✅ | `llm.py` refactored to Provider registry. Anthropic/OpenAI = one-liner to add. |
 | 20 | Ops dashboards                   | 🟡 | Streamlit Command Centre covers ~70%. Incremental. |
 
 ---
@@ -111,6 +111,23 @@ Commit `2703b2e`.
 
 Pipeline physician. Checks Groq / Groq-Guard / Sarvam / Supabase / 24h triage-rate.
 Cron-runnable via `scripts/run_vaidya.py`. Exit 0/1/2.
+
+### Phase 17 — Bhashacharya ✅
+**Completed**: 2026-04-19
+
+Bengali language second-opinion agent. Runs after Dharmarakshak on WBBSE/WBCHSE
+packages. One batched LLM call per StudyPackage via Sarvam-M. Flags matra / য়-য /
+anusvar / conjunct / loanword / punctuation / register-mismatch issues. Non-blocking:
+admin triage reviews `bhashacharya_audit` in metadata.
+
+### Phase 19 — Formal LLM Router ✅
+**Completed**: 2026-04-19
+
+Refactored `llm.py` from hardcoded if/else routing to a pluggable provider
+registry. `register_provider()` + `route(language, model_hint)` + fallback chain.
+Anthropic/OpenAI registration is now a one-liner when the time comes — no
+changes to `call_llm` required. Phoenix tracing auto-loads AnthropicInstrumentor
+if the package is installed.
 
 ### Phase 18 — Eval harness ✅
 **Completed**: 2026-04-19

@@ -23,7 +23,8 @@ added, renamed, extracted, or repositioned.
 |---|---|---|---|---|
 | **Ganak** | গণক | The Analyst | `agents/ganak.py` (consumed by `admin/streamlit_app.py` Priority panel) | Heuristic priority analyst — coverage gaps, class priority, board weighting, zero-coverage boost. No LLM. |
 | **Acharya** | আচার্য | The Curriculum Orchestrator | `agents/acharya.py` + `scripts/run_acharya.py` + Command Centre panel | Phase 10. Reads গণক's top-N priorities → dispatches `ingest_school/competitive/it.yml` workflows via GitHub Actions API. Stateless, rate-limited, dry-run previewable. Also runnable from cron via `python -m scripts.run_acharya`. No LLM. |
-| **Vaidya** | বৈদ্য | The Pipeline Physician | `agents/vaidya.py` + `scripts/run_vaidya.py` | Phase 16. Health-check agent — pings Groq / Groq-Guard / Sarvam / Supabase, measures 24h triage approval rate. Cron-friendly CLI with exit codes 0/1/2. No LLM for checks (one tiny Groq ping to verify endpoint). |
+| **Vaidya** | বৈদ্য | The Pipeline Physician | `agents/vaidya.py` + `scripts/run_vaidya.py` | Phase 16. Health-check agent — pings Groq / Groq-Guard / Sarvam / Supabase, measures 24h triage approval rate. Cron-friendly CLI with exit codes 0/1/2. No LLM for checks (one tiny Groq ping to verify endpoint). Persists to `vaidya_health_log`. |
+| **Bhashacharya** | ভাষাচার্য | The Language Purist | `agents/bhashacharya.py` (invoked from `gyan_pipeline.py` after Dharmarakshak) | Phase 17. Second-opinion Bengali grammar/spelling auditor. Runs on WBBSE/WBCHSE content only; one LLM call per StudyPackage batched. Non-blocking — flags issues for admin triage, never drops MCQs. Emits `bhashacharya_audit` to metadata. Routed to Sarvam-M for Bengali-native spelling judgment. |
 
 ## Planned Agents (milestone-gated)
 

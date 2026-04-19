@@ -239,6 +239,19 @@ def run(taxonomy: TaxonomySlice, force: bool = False) -> PipelineResult:
         emit_progress(f"[ধর্মরক্ষক] Safety check error (non-blocking): {e}")
         # Never let safety check crash the pipeline — content goes to human triage
 
+    # ── ভাষাচার্য — Bengali language purist (Phase 17, non-blocking) ─────────
+    # Audits language quality on Bengali-medium content only. Never drops MCQs;
+    # admin triage reviews flagged issues. Failure here must never break the run.
+    try:
+        from agents import bhashacharya
+        if package.mcqs and bhashacharya.should_run(taxonomy, package.mcqs):
+            lang_audit = bhashacharya.audit(package.mcqs, taxonomy)
+            new_metadata = dict(package.metadata or {})
+            new_metadata["bhashacharya_audit"] = bhashacharya.audit_to_dict(lang_audit)
+            package = package.model_copy(update={"metadata": new_metadata})
+    except Exception as e:
+        emit_progress(f"[ভাষাচার্য] audit error (non-blocking): {e}")
+
     # ── Push to Supabase ──────────────────────────────────────────────────────
     emit_progress("Pushing to Supabase ingestion_triage_queue")
     from db import supabase_loader
