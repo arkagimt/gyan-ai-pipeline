@@ -403,6 +403,104 @@ def page_command_centre():
 
     st.markdown("---")
 
+    # ── আচার্য — Autonomous batch orchestrator (Phase 10) ─────────────────────
+    with st.expander("🪔 **আচার্য — Autonomous Batch Orchestrator**  ·  fire গণক's top-N as GitHub workflows", expanded=False):
+        st.caption(
+            "Acharya reads গণক's priority list and dispatches ingest workflows "
+            "directly — no manual clicking. Preview first, then run for real."
+        )
+
+        ac_c1, ac_c2, ac_c3, ac_c4 = st.columns([1, 1, 1, 1])
+        ac_limit   = ac_c1.number_input("Batch size",  min_value=1, max_value=20, value=3, key="ac_limit")
+        ac_segment = ac_c2.selectbox("Segment", ["school", "competitive", "it"], key="ac_segment")
+        ac_delay   = ac_c3.number_input("Delay (s)",   min_value=0.0, max_value=30.0, value=3.0, step=0.5, key="ac_delay")
+        ac_mcqs    = ac_c4.number_input("MCQs / run",  min_value=3,   max_value=20,   value=10, key="ac_mcqs")
+
+        ac_board = None
+        ac_class = None
+        if ac_segment == "school":
+            ac_c5, ac_c6 = st.columns(2)
+            ac_board = ac_c5.selectbox(
+                "Board (optional)", ["(any)"] + list(CURRICULUM.keys()), key="ac_board",
+            )
+            if ac_board == "(any)":
+                ac_board = None
+            all_classes = sorted({c for b in CURRICULUM.values() for c in b.keys()})
+            ac_class = ac_c6.selectbox(
+                "Class (optional)", ["(any)"] + [str(c) for c in all_classes], key="ac_class",
+            )
+            ac_class = None if ac_class == "(any)" else int(ac_class)
+
+        ac_b1, ac_b2 = st.columns([1, 1])
+
+        if ac_b1.button("👁 Preview (dry-run)", key="ac_preview"):
+            from agents import acharya
+            receipt = acharya.run_batch(
+                coverage       = coverage,
+                limit          = ac_limit,
+                segment_filter = ac_segment,
+                board_filter   = ac_board,
+                class_filter   = ac_class,
+                per_run_mcqs   = ac_mcqs,
+                delay_s        = 0.0,
+                dry_run        = True,
+            )
+            if not receipt.results:
+                st.info("No priorities found — curriculum fully covered for this filter?")
+            else:
+                st.success(f"Would dispatch **{receipt.dispatched}** workflows:")
+                st.dataframe(
+                    [
+                        {
+                            "Label":    r.priority.segment + " · " + (
+                                f"{r.priority.board} · Class {r.priority.class_num} · {r.priority.subject}"
+                                if r.priority.segment == "school"
+                                else f"{r.priority.authority or r.priority.provider} · {r.priority.exam} · {r.priority.topic}"
+                            ),
+                            "Gap":      r.priority.gap,
+                            "Score":    r.priority.priority_score,
+                            "Workflow": r.workflow,
+                            "Inputs":   r.inputs,
+                        }
+                        for r in receipt.results
+                    ],
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+        if ac_b2.button("🚀 Dispatch for real", type="primary", key="ac_run"):
+            pat  = st.secrets.get("GITHUB_PAT", "")
+            repo = st.secrets.get("GITHUB_REPO", "arkagimt/gyan-ai-pipeline")
+            if not pat:
+                st.error("GITHUB_PAT not set in Streamlit secrets.")
+            else:
+                from agents import acharya
+                with st.spinner(f"Acharya dispatching {ac_limit} workflows…"):
+                    receipt = acharya.run_batch(
+                        coverage       = coverage,
+                        limit          = ac_limit,
+                        segment_filter = ac_segment,
+                        board_filter   = ac_board,
+                        class_filter   = ac_class,
+                        per_run_mcqs   = ac_mcqs,
+                        delay_s        = ac_delay,
+                        dry_run        = False,
+                        pat            = pat,
+                        repo           = repo,
+                    )
+                if receipt.dispatched:
+                    st.success(
+                        f"✅ Dispatched **{receipt.dispatched}** workflow(s)"
+                        + (f" · {receipt.failed} failed" if receipt.failed else "")
+                        + f"  ·  [🔗 Watch on GitHub](https://github.com/{repo}/actions)"
+                    )
+                if receipt.failed:
+                    st.error(f"{receipt.failed} dispatch(es) failed — see details below.")
+                with st.expander("Full receipt"):
+                    st.json(receipt.to_dict())
+
+    st.markdown("---")
+
     # ── Charts ────────────────────────────────────────────────────────────────
     col_chart1, col_chart2 = st.columns(2)
 

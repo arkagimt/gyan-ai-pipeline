@@ -22,6 +22,7 @@ added, renamed, extracted, or repositioned.
 | Website Name | Bengali | Role | Implementation | Notes |
 |---|---|---|---|---|
 | **Ganak** | গণক | The Analyst | `agents/ganak.py` (consumed by `admin/streamlit_app.py` Priority panel) | Heuristic priority analyst — coverage gaps, class priority, board weighting, zero-coverage boost. No LLM. |
+| **Acharya** | আচার্য | The Curriculum Orchestrator | `agents/acharya.py` + `scripts/run_acharya.py` + Command Centre panel | Phase 10. Reads গণক's top-N priorities → dispatches `ingest_school/competitive/it.yml` workflows via GitHub Actions API. Stateless, rate-limited, dry-run previewable. Also runnable from cron via `python -m scripts.run_acharya`. No LLM. |
 
 ## Planned Agents (milestone-gated)
 
