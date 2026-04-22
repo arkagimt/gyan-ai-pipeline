@@ -47,8 +47,12 @@
     ],
     "audit_gate": {
       "required": "vidushak.verify_and_repair()",
-      "status": "pending",
-      "note": "Seed is non-production until Vidushak adversarial pass succeeds."
+      "status": "passed",
+      "note": "Seed is non-production until Vidushak adversarial pass succeeds.",
+      "last_audit_report": "audit-20260422T013450Z.json",
+      "last_audit_utc": "20260422T013450Z",
+      "issues_found": 0,
+      "unresolved": 0
     }
   },
   "mcqs": [

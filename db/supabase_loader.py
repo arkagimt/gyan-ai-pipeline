@@ -53,6 +53,7 @@ _FORWARDED_METADATA_KEYS = (
     "source_url",          # exact URL the PDF/text came from, if applicable
     "provenance_tier",     # SourceType enum value — credibility tier for Trust Chip
     "confidence",          # 0–100 quality score
+    "scope_flag",          # "beyond_outline" for MCQs outside official skills outline
 )
 
 
