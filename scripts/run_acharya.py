@@ -32,15 +32,63 @@ from agents import acharya
 from config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 
 
+def _bump_coverage(coverage: dict, payload: dict) -> None:
+    """
+    Extract a taxonomy key from a payload and increment its count.
+    Keys match what ganak.analyze() looks up per segment:
+      school      → (board, class_num, subject)
+      entrance    → (authority, exam, topic)
+      recruitment → (authority, exam, topic)
+      it          → (provider, exam, topic)
+    Silently skips rows that lack the required fields — legacy data is fine.
+    """
+    segment = str(payload.get("segment") or "").strip().lower()
+
+    # School (default when segment missing but board+class present — back-compat
+    # with legacy rows written before the segment column existed).
+    if segment == "school" or (not segment and payload.get("board")):
+        board   = str(payload.get("board") or "").strip()
+        cls     = payload.get("class_num")
+        subject = str(payload.get("subject") or "").strip()
+        if board and cls is not None and subject:
+            key = (board, int(cls), subject)
+            coverage[key] = coverage.get(key, 0) + 1
+        return
+
+    if segment in ("entrance", "recruitment", "competitive"):
+        authority = str(payload.get("authority") or "").strip()
+        exam      = str(payload.get("exam") or "").strip()
+        topic     = str(payload.get("topic") or "").strip()
+        if authority and exam and topic:
+            key = (authority, exam, topic)
+            coverage[key] = coverage.get(key, 0) + 1
+        return
+
+    if segment == "it":
+        provider = str(payload.get("provider") or "").strip()
+        exam     = str(payload.get("exam") or "").strip()
+        topic    = str(payload.get("topic") or "").strip()
+        if provider and exam and topic:
+            key = (provider, exam, topic)
+            coverage[key] = coverage.get(key, 0) + 1
+        return
+
+
 def _fetch_coverage() -> dict:
     """
     Headless version of admin/streamlit_app.py::fetch_coverage.
-    Returns {(board, class_num, subject): count} from triage + pyq_bank_v2.
+
+    Returns a single flat dict keyed per segment (see _bump_coverage for shapes).
+    Ganak's analyze() looks up keys by shape, so mixing segments in one dict is safe.
+
+    Sources:
+      - ingestion_triage_queue (non-rejected pending content)
+      - pyq_bank_v2 (promoted live questions)
     """
     db = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
     coverage: dict[tuple, int] = {}
 
-    # Triage queue (non-rejected)
+    # Triage queue (non-rejected) — pending content counts as coverage-in-flight
     try:
         rows = (
             db.table("ingestion_triage_queue")
@@ -50,27 +98,15 @@ def _fetch_coverage() -> dict:
             .execute()
         ).data or []
         for row in rows:
-            raw     = row.get("raw_data") or {}
-            board   = str(raw.get("board") or "").strip()
-            cls     = raw.get("class_num")
-            subject = str(raw.get("subject") or "").strip()
-            if board and cls is not None and subject:
-                key = (board, int(cls), subject)
-                coverage[key] = coverage.get(key, 0) + 1
+            _bump_coverage(coverage, row.get("raw_data") or {})
     except Exception:
         pass
 
-    # Live bank
+    # Live bank — approved + promoted questions
     try:
         rows = db.table("pyq_bank_v2").select("question_payload").execute().data or []
         for row in rows:
-            payload = row.get("question_payload") or {}
-            board   = str(payload.get("board") or "").strip()
-            cls     = payload.get("class_num")
-            subject = str(payload.get("subject") or "").strip()
-            if board and cls is not None and subject:
-                key = (board, int(cls), subject)
-                coverage[key] = coverage.get(key, 0) + 1
+            _bump_coverage(coverage, row.get("question_payload") or {})
     except Exception:
         pass
 
@@ -80,7 +116,12 @@ def _fetch_coverage() -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run আচার্য batch orchestrator.")
     ap.add_argument("--limit",   type=int, default=5, help="Max dispatches this run.")
-    ap.add_argument("--segment", choices=["school", "competitive", "it"], default="school")
+    ap.add_argument(
+        "--segment",
+        choices=["school", "competitive", "entrance", "recruitment", "it"],
+        default="school",
+        help="'competitive' is legacy alias — prefer 'entrance' or 'recruitment'.",
+    )
     ap.add_argument("--board",   default=None, help="Restrict to board (e.g. WBBSE).")
     ap.add_argument("--class",   dest="class_num", type=int, default=None, help="Restrict to class.")
     ap.add_argument("--per-run-mcqs", type=int, default=10)

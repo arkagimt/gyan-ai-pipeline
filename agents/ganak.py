@@ -30,10 +30,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from curriculum import (
-    CURRICULUM, CLASS_PRIORITY, COMPETITIVE_TREE, IT_TREE,
-    MCQ_TARGET_PER_SLOT,
+    CURRICULUM, CLASS_PRIORITY,
+    ENTRANCE_TREE, RECRUITMENT_TREE, COMPETITIVE_TREE,  # COMPETITIVE_TREE kept for back-compat
+    IT_TREE, MCQ_TARGET_PER_SLOT,
 )
-from models.schemas import TaxonomySlice, Segment
+from models.schemas import TaxonomySlice, Segment, with_derived_scope_nature
 from config import emit_agent
 
 
@@ -61,8 +62,11 @@ class TopicPriority:
 
     @property
     def taxonomy_slice(self) -> TaxonomySlice:
-        """Convert to a runnable TaxonomySlice for gyan_pipeline.py."""
-        return TaxonomySlice(
+        """Convert to a runnable TaxonomySlice for gyan_pipeline.py.
+        Scope + nature are auto-derived so downstream consumers (supabase_loader,
+        web filters) get the classification for free.
+        """
+        slice = TaxonomySlice(
             segment   = Segment(self.segment),
             board     = self.board,
             class_num = self.class_num,
@@ -73,6 +77,7 @@ class TopicPriority:
             provider  = self.provider,
             count     = min(self.gap, 10),  # cap at 10 per run
         )
+        return with_derived_scope_nature(slice)
 
 
 # ── Scoring helpers ───────────────────────────────────────────────────────────
@@ -183,9 +188,11 @@ def analyze(
                         reason        = _reason(current, target_per_slot, cls, board),
                     ))
 
-    # ── Competitive segment ───────────────────────────────────────────────────
-    if segment_filter in (None, "competitive"):
-        for authority, exams in COMPETITIVE_TREE.items():
+    # ── Entrance segment (JEE, NEET, CAT, GATE, WBJEE, NDA, CLAT, CUET) ───────
+    # `segment_filter="competitive"` is kept as a combined alias (legacy) and
+    # pulls from both entrance + recruitment — so existing callers keep working.
+    if segment_filter in (None, "entrance", "competitive"):
+        for authority, exams in ENTRANCE_TREE.items():
             for exam, topics in exams.items():
                 for topic in topics:
                     key     = (authority, exam, topic)
@@ -193,9 +200,32 @@ def analyze(
                     gap     = max(0, target_per_slot - current)
                     if gap == 0:
                         continue
-                    score = _score(current, target_per_slot, None, None) + 5.0  # competitive boost
+                    score = _score(current, target_per_slot, None, None) + 5.0  # entrance boost
                     priorities.append(TopicPriority(
-                        segment        = "competitive",
+                        segment        = "entrance",
+                        authority      = authority,
+                        exam           = exam,
+                        topic          = topic,
+                        current_mcqs   = current,
+                        target_mcqs    = target_per_slot,
+                        gap            = gap,
+                        priority_score = round(score, 1),
+                        reason         = _reason(current, target_per_slot, None, None),
+                    ))
+
+    # ── Recruitment segment (WBPSC, WBSSC, SSC, UPSC, Railway) ────────────────
+    if segment_filter in (None, "recruitment", "competitive"):
+        for authority, exams in RECRUITMENT_TREE.items():
+            for exam, topics in exams.items():
+                for topic in topics:
+                    key     = (authority, exam, topic)
+                    current = coverage.get(key, 0)
+                    gap     = max(0, target_per_slot - current)
+                    if gap == 0:
+                        continue
+                    score = _score(current, target_per_slot, None, None) + 5.0  # recruitment boost
+                    priorities.append(TopicPriority(
+                        segment        = "recruitment",
                         authority      = authority,
                         exam           = exam,
                         topic          = topic,

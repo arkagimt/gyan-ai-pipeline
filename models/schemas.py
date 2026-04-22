@@ -47,6 +47,59 @@ class Nature(str, Enum):
     cert        = "cert"        # AWS SAA, AZ-900 — professional certifications
 
 
+class SourceType(str, Enum):
+    """Provenance tier for a piece of seed material. Maps to web Trust Chips.
+
+    Stronger tiers (near top) give stronger provenance claims on the MCQ card.
+    This is the single source of truth — web UI badge colour + copy should
+    switch on this enum, not on free-text guesses.
+
+    Ranked high→low credibility:
+      official_past       → actual past exam paper from the authority itself
+                            (UPSC archive, JEE NTA archive, CBSE question-paper
+                            section). Strongest signal — highest Trust Chip tier.
+      official_sample     → sample / specimen / model paper from the authority
+                            (CBSE SQP, CISCE specimen, board model papers).
+                            Vendor-authored but not a real administered exam.
+      ncert_exemplar      → NCERT Exemplar Problems (Class 6–12). Govt-published,
+                            explicitly reusable, used nationally as de-facto prep.
+      board_publication   → book/compilation bought directly from the board's
+                            own publications department (CISCE Publications,
+                            WBBSE Bhawan). Legit-to-reuse because paid to the
+                            copyright holder with educational-use license.
+      vendor_docs         → official vendor documentation for IT certs
+                            (AWS Docs, Microsoft Learn, GCP Docs). Mostly
+                            CC-licensed or explicitly permit educational reuse.
+      vendor_sample       → official cert vendor sample questions / practice
+                            assessments (AWS Skill Builder free, Microsoft Learn
+                            knowledge checks, GCP Cloud Skills Boost).
+                            **NOT brain dumps — those are banned.**
+      teacher_upload      → PDF uploaded by a verified teacher partner via
+                            /admin/teacher-upload (Phase 6.2). Trust depends
+                            on which teacher — edit_log preserves the chain.
+      llm_knowledge       → no source material; generated from the base model's
+                            training knowledge. Weakest tier — Trust Chip
+                            should explicitly disclose this to the student.
+
+    Banned (documented in GAP_SOURCING.md, enforced in code-review, never
+    acquires a SourceType value):
+      - exam dumps (ExamTopics / BrainDumps / leaked cert questions) — NDA +
+        DMCA liability, cert-vendor partnership disqualifier, student-cert
+        invalidation risk.
+      - third-party ed-tech compilations (PW / BYJU'S / Unacademy PYQ PDFs) —
+        compilation copyright + ToS violations regardless of underlying
+        question public-domain status.
+    """
+    official_past     = "official_past"
+    official_sample   = "official_sample"
+    ncert_exemplar    = "ncert_exemplar"
+    board_publication = "board_publication"
+    vendor_docs       = "vendor_docs"
+    vendor_sample     = "vendor_sample"
+    teacher_upload    = "teacher_upload"
+    llm_knowledge     = "llm_knowledge"
+
+
 # ── Pipeline Input ────────────────────────────────────────────────────────────
 
 class TaxonomySlice(BaseModel):
@@ -80,6 +133,112 @@ class TaxonomySlice(BaseModel):
         else:
             parts = [self.provider, self.exam, self.topic]
         return " › ".join(p for p in parts if p)
+
+
+# ── Scope + Nature derivation (Phase 1.3) ─────────────────────────────────────
+# Auto-classify a TaxonomySlice into the geographic scope and pedagogical nature
+# so downstream code (web tabs, admin triage filters, Ganak priority math) can
+# query by these axes instead of the coarse `segment` column.
+#
+# Design:
+#   - "scope"  answers  "who is this content FOR — one state, the whole country,
+#                        or the global IT industry?"
+#   - "nature" answers  "what KIND of content is it — a school board syllabus, a
+#                        university entrance test, a govt-job recruitment exam,
+#                        or a vendor certification?"
+#
+# Kept outside the Pydantic model so it's a pure function — trivial to test and
+# to call from anywhere a TaxonomySlice exists.
+
+# Boards recognised as state-specific. Anything else defaults to central.
+_STATE_SCOPE_BOARDS   = {"WBBSE", "WBCHSE", "WBBPE"}
+_CENTRAL_SCOPE_BOARDS = {"CBSE", "ICSE", "ISC", "NIOS"}
+# Entrance exams that are state-specific (most are central).
+_STATE_SCOPE_ENTRANCE_AUTHORITIES = {"WBJEE"}
+
+# Recruitment — explicit whitelists, because prefix-matching mislabels UPSC
+# (Union Public Service Commission → central) as state-UP. Update when adding
+# a new authority to curriculum.RECRUITMENT_TREE.
+_CENTRAL_RECRUITMENT_AUTHORITIES = {
+    "UPSC", "SSC", "IBPS", "SBI", "RBI", "LIC", "EPFO",
+    "RAILWAY", "RRB", "NTPC",     # Indian Railways variants
+}
+# State PSCs / SSCs — prefix-matched because they all follow the pattern
+# {state-code}{PSC|SSC|PCS|SSSC|PRB|BPE}. Prefixes listed explicitly so we
+# don't mis-classify central authorities that happen to start with those letters.
+_STATE_RECRUITMENT_PATTERNS = (
+    "WBPSC", "WBSSC", "WBPRB", "WBBPE",
+    "UPPSC", "UPPCS", "UPSSSC",
+    "MPPSC", "MPSSSB",
+    "TNPSC", "TNMS",
+    "KPSC",  "KAS",
+    "GPSC",  "GSSSB",
+    "OPSC",  "OSSC",
+    "APPSC", "TSPSC",
+    "BPSC",  "RPSC", "HPSC", "PPSC", "JKSSB",
+)
+
+
+def derive_scope_nature(taxonomy: "TaxonomySlice") -> tuple["Scope | None", "Nature | None"]:
+    """
+    Infer (scope, nature) for a TaxonomySlice.
+
+    Rules:
+      * segment=school   → nature=board, scope=state|central based on board
+      * segment=entrance → nature=entrance, scope=state if authority∈_STATE_SCOPE_ENTRANCE_AUTHORITIES
+                                              else central
+      * segment=recruitment → nature=recruitment, scope=state if authority startswith any state prefix
+                                                     else central
+      * segment=competitive (legacy alias) → nature=recruitment (conservative default),
+                                             scope derived as for recruitment
+      * segment=it      → nature=cert, scope=international
+
+    Returns (None, None) only if segment is genuinely unknown.
+    """
+    seg = taxonomy.segment
+
+    if seg == Segment.school:
+        board = (taxonomy.board or "").strip().upper()
+        if board in _STATE_SCOPE_BOARDS:
+            return Scope.state, Nature.board
+        if board in _CENTRAL_SCOPE_BOARDS or board.startswith("CBSE") or board.startswith("ICSE"):
+            return Scope.central, Nature.board
+        # Unknown board — treat as state-specific (safer for regional filtering).
+        return Scope.state, Nature.board
+
+    if seg == Segment.entrance:
+        auth = (taxonomy.authority or "").strip().upper()
+        scope = Scope.state if auth in _STATE_SCOPE_ENTRANCE_AUTHORITIES else Scope.central
+        return scope, Nature.entrance
+
+    if seg in (Segment.recruitment, Segment.competitive):
+        auth = (taxonomy.authority or "").strip().upper()
+        if auth in _CENTRAL_RECRUITMENT_AUTHORITIES:
+            return Scope.central, Nature.recruitment
+        is_state = any(auth.startswith(p) for p in _STATE_RECRUITMENT_PATTERNS)
+        scope = Scope.state if is_state else Scope.central
+        return scope, Nature.recruitment
+
+    if seg == Segment.it:
+        return Scope.international, Nature.cert
+
+    return None, None
+
+
+def with_derived_scope_nature(taxonomy: "TaxonomySlice") -> "TaxonomySlice":
+    """
+    Return a copy of `taxonomy` with scope/nature filled in if they're missing.
+    Callers who already set them explicitly are respected.
+    """
+    scope, nature = derive_scope_nature(taxonomy)
+    updates: dict = {}
+    if taxonomy.scope is None and scope is not None:
+        updates["scope"] = scope
+    if taxonomy.nature is None and nature is not None:
+        updates["nature"] = nature
+    if not updates:
+        return taxonomy
+    return taxonomy.model_copy(update=updates)
 
 
 # ── সর্বজ্ঞ Output ─────────────────────────────────────────────────────────────

@@ -4,11 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       provider:
-        description: 'Provider (AWS | Microsoft | GoogleCloud | Snowflake | ScrumAgile | Anthropic)'
+        # Free-text to track IT_TREE without YAML drift. Today:
+        # AWS | Microsoft | GoogleCloud | Snowflake | ScrumAgile | Anthropic
+        # (plus anything curriculum.py adds later)
+        description: 'Provider (AWS | Microsoft | GoogleCloud | Snowflake | ScrumAgile | Anthropic | …)'
         required: true
         default: 'AWS'
-        type: choice
-        options: [AWS, Microsoft, GoogleCloud, Snowflake, ScrumAgile, Anthropic]
+        type: string
       exam:
         description: 'Exam (e.g. "Cloud Practitioner (CLF-C02)")'
         required: true

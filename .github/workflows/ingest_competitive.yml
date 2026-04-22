@@ -1,20 +1,35 @@
-name: 🏛️ Ingest — Competitive Exams
+name: 🏛️ Ingest — Competitive (Entrance + Recruitment)
+
+# One workflow handles both entrance (JEE/NEET/CAT/GATE/WBJEE/NDA/CLAT/CUET)
+# and recruitment (UPSC/SSC/WBPSC/IBPS/RBI/LIC/EPFO/Railway/WBSSC/…). The
+# `segment` input decides nature=entrance vs nature=recruitment downstream
+# (see models/schemas.derive_scope_nature). Pipeline CLI still accepts the
+# legacy "competitive" alias, so old saved-dispatch links keep working.
 
 on:
   workflow_dispatch:
     inputs:
+      segment:
+        description: 'Segment (entrance | recruitment | competitive [legacy])'
+        required: true
+        default: 'recruitment'
+        type: choice
+        options: [entrance, recruitment, competitive]
       authority:
-        description: 'Authority (WBPSC | WBPRB | WBBPE | WBSSC)'
+        # Free-text: ENTRANCE_TREE + RECRUITMENT_TREE together have ~20+
+        # authorities (WBPSC, UPSC, SSC, IBPS, RBI, LIC, EPFO, Railway,
+        # WBSSC, WBPRB, WBBPE, JEE, NEET, CAT, GATE, WBJEE, NDA, CLAT, CUET, …).
+        # Using `type: string` avoids drift between YAML and curriculum.py.
+        description: 'Authority (UPSC | SSC | WBPSC | JEE | NEET | WBJEE | GATE | …)'
         required: true
         default: 'WBPSC'
-        type: choice
-        options: [WBPSC, WBPRB, WBBPE, WBSSC]
+        type: string
       exam:
-        description: 'Exam name (e.g. "WBCS Prelims")'
+        description: 'Exam name (e.g. "WBCS Prelims", "JEE Main 2024")'
         required: true
         default: 'WBCS Prelims'
       topic:
-        description: 'Topic (e.g. "History of India")'
+        description: 'Topic (e.g. "History of India", "Physics - Mechanics")'
         required: true
         default: 'History of India'
       count:
@@ -53,7 +68,7 @@ jobs:
           GROQ_GUARD_MODEL:     llama-guard-3-8b
           PHOENIX_ENDPOINT:     ${{ secrets.PHOENIX_ENDPOINT }}
         run: |
-          ARGS="--segment competitive \
+          ARGS="--segment ${{ github.event.inputs.segment }} \
                 --authority ${{ github.event.inputs.authority }} \
                 --exam \"${{ github.event.inputs.exam }}\" \
                 --topic \"${{ github.event.inputs.topic }}\" \

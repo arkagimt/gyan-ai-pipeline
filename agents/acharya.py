@@ -25,9 +25,10 @@ Design notes:
    the Groq API or hit GitHub's "20 concurrent workflow runs per repo" cap.
 
 3. Segment routing:
-     school      → ingest_school.yml
-     competitive → ingest_competitive.yml
-     it          → ingest_it.yml
+     school                        → ingest_school.yml
+     entrance / recruitment /
+        competitive (legacy alias) → ingest_competitive.yml
+     it                            → ingest_it.yml
 
 4. dry_run=True returns the would-be dispatch list without hitting the API.
    The admin UI uses this for a preview before the real run.
@@ -56,7 +57,13 @@ from config import emit_agent, emit_progress
 
 _WORKFLOW_BY_SEGMENT = {
     "school":      "ingest_school.yml",
-    "competitive": "ingest_competitive.yml",
+    # Entrance + Recruitment both route to ingest_competitive.yml for now —
+    # the workflow is taxonomy-driven (authority/exam/topic inputs), so the
+    # pipeline run self-classifies via derive_scope_nature + nature tagging
+    # in supabase_loader. Split workflows only if the yml args diverge.
+    "entrance":    "ingest_competitive.yml",
+    "recruitment": "ingest_competitive.yml",
+    "competitive": "ingest_competitive.yml",   # legacy alias
     "it":          "ingest_it.yml",
 }
 
@@ -114,10 +121,13 @@ class BatchReceipt:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+_COMPETITIVE_SEGMENTS = ("competitive", "entrance", "recruitment")
+
+
 def _priority_label(p: TopicPriority) -> str:
     if p.segment == "school":
         return f"{p.board} · Class {p.class_num} · {p.subject}"
-    if p.segment == "competitive":
+    if p.segment in _COMPETITIVE_SEGMENTS:
         return f"{p.authority} · {p.exam} · {p.topic}"
     return f"{p.provider} · {p.exam} · {p.topic}"
 
@@ -133,8 +143,13 @@ def _priority_to_inputs(p: TopicPriority, per_run_mcqs: int) -> dict:
             "subject":   p.subject or "",
             "count":     count,
         }
-    if p.segment == "competitive":
+    if p.segment in _COMPETITIVE_SEGMENTS:
+        # Pass `segment` through so ingest_competitive.yml forwards it to
+        # gyan_pipeline.py — this is what lets JEE-entrance get tagged
+        # nature=entrance instead of the legacy-alias "competitive" →
+        # nature=recruitment default in derive_scope_nature.
         return {
+            "segment":   p.segment,
             "authority": p.authority or "",
             "exam":      p.exam or "",
             "topic":     p.topic or "",
@@ -201,7 +216,8 @@ def run_batch(
         coverage:        {(board, class_num, subject): count} — usually from
                          fetch_coverage(). Ignored if `priorities` is supplied.
         limit:           how many workflows to dispatch this batch.
-        segment_filter:  "school" | "competitive" | "it" | None (all).
+        segment_filter:  "school" | "entrance" | "recruitment" | "competitive"
+                         (legacy alias — pulls entrance+recruitment) | "it" | None.
         board_filter:    optional board restriction (e.g. "WBBSE").
         class_filter:    optional class restriction (e.g. 10).
         per_run_mcqs:    MCQs requested per dispatched run.

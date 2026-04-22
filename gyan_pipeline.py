@@ -36,14 +36,18 @@ import sys
 import time
 
 from config import check_required_env, emit_progress, emit_error
-from models.schemas import TaxonomySlice, Segment, PipelineResult
+from models.schemas import (
+    TaxonomySlice, Segment, PipelineResult, with_derived_scope_nature,
+)
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Gyan AI data ingestion pipeline")
-    p.add_argument("--segment",     required=True, choices=["school", "competitive", "it"])
+    p.add_argument("--segment",     required=True,
+                   choices=["school", "competitive", "entrance", "recruitment", "it"],
+                   help="'competitive' is legacy alias — prefer 'entrance' or 'recruitment'")
     p.add_argument("--count",       type=int, default=5)
     # School args
     p.add_argument("--board",       default=None)
@@ -67,7 +71,9 @@ def parse_args() -> argparse.Namespace:
 # ── Build TaxonomySlice from args ─────────────────────────────────────────────
 
 def build_taxonomy(args: argparse.Namespace) -> TaxonomySlice:
-    return TaxonomySlice(
+    # Derive scope + nature immediately so every downstream consumer
+    # (supabase_loader, admin triage, web filters) gets them for free.
+    slice = TaxonomySlice(
         segment    = Segment(args.segment),
         board      = args.board,
         class_num  = args.class_num,
@@ -81,6 +87,7 @@ def build_taxonomy(args: argparse.Namespace) -> TaxonomySlice:
         source_url = args.source_url,
         source_pdf = args.source_pdf,
     )
+    return with_derived_scope_nature(slice)
 
 
 def apply_dedup_memory(taxonomy: TaxonomySlice, force: bool) -> TaxonomySlice | None:
@@ -207,6 +214,14 @@ def run(taxonomy: TaxonomySlice, force: bool = False) -> PipelineResult:
     except Exception as e:
         emit_error(f"সূত্রধর failed: {e}")
         return PipelineResult(errors=1, elapsed_s=round(time.time() - start, 2))
+
+    # Propagate source_type from RawExtract into package metadata so it survives
+    # to the DB write (and onward to the web trust chips).
+    _stamped_metadata = dict(package.metadata or {})
+    _stamped_metadata.setdefault("source_type", report.extract.source_type)
+    # Human-readable source label for the "📖 Source: …" chip.
+    _stamped_metadata.setdefault("source_label", taxonomy.label)
+    package = package.model_copy(update={"metadata": _stamped_metadata})
 
     # ── ধর্মরক্ষক — Safety gate ────────────────────────────────────────────────
     emit_progress(f"Step 5/5 — ধর্মরক্ষক safety check")

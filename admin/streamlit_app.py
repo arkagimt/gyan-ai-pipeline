@@ -105,17 +105,59 @@ def get_supabase() -> Client:
     )
 
 
+def _bump_coverage(coverage: dict, payload: dict) -> None:
+    """
+    Increment coverage count for the taxonomy key inside `payload`.
+    Per-segment key shapes match ganak.analyze() lookups:
+      school      → (board, class_num, subject)
+      entrance    → (authority, exam, topic)
+      recruitment → (authority, exam, topic)
+      it          → (provider, exam, topic)
+    Silently skips rows missing required fields (legacy data tolerant).
+    """
+    segment = str(payload.get("segment") or "").strip().lower()
+
+    # Legacy rows (written before `segment` column existed) had board+class →
+    # treat as school so old WBBSE content still counts toward coverage.
+    if segment == "school" or (not segment and payload.get("board")):
+        board   = str(payload.get("board") or "").strip()
+        cls     = payload.get("class_num")
+        subject = str(payload.get("subject") or "").strip()
+        if board and cls is not None and subject:
+            key = (board, int(cls), subject)
+            coverage[key] = coverage.get(key, 0) + 1
+        return
+
+    if segment in ("entrance", "recruitment", "competitive"):
+        authority = str(payload.get("authority") or "").strip()
+        exam      = str(payload.get("exam") or "").strip()
+        topic     = str(payload.get("topic") or "").strip()
+        if authority and exam and topic:
+            key = (authority, exam, topic)
+            coverage[key] = coverage.get(key, 0) + 1
+        return
+
+    if segment == "it":
+        provider = str(payload.get("provider") or "").strip()
+        exam     = str(payload.get("exam") or "").strip()
+        topic    = str(payload.get("topic") or "").strip()
+        if provider and exam and topic:
+            key = (provider, exam, topic)
+            coverage[key] = coverage.get(key, 0) + 1
+        return
+
+
 @st.cache_data(ttl=300)
 def fetch_coverage(_cache_key: str) -> dict:
     """
-    Returns {(board, class_num, subject): count}.
-    Queries triage queue (non-rejected) + pyq_bank_v2.
+    Returns a single flat coverage dict across all segments. Ganak's analyze()
+    keys lookups by shape (3-tuple), so mixing segments in one dict is safe.
     _cache_key rotates every 5 min to auto-expire.
     """
     db = get_supabase()
     coverage: dict[tuple, int] = {}
 
-    # 1. Triage queue (pending + approved)
+    # 1. Triage queue (non-rejected — pending content counts as coverage-in-flight)
     try:
         rows = (
             db.table("ingestion_triage_queue")
@@ -125,17 +167,11 @@ def fetch_coverage(_cache_key: str) -> dict:
             .execute()
         ).data or []
         for row in rows:
-            raw     = row.get("raw_data") or {}
-            board   = str(raw.get("board") or "").strip()
-            cls     = raw.get("class_num")
-            subject = str(raw.get("subject") or "").strip()
-            if board and cls is not None and subject:
-                key = (board, int(cls), subject)
-                coverage[key] = coverage.get(key, 0) + 1
+            _bump_coverage(coverage, row.get("raw_data") or {})
     except Exception:
         pass
 
-    # 2. Live approved content
+    # 2. Live promoted bank
     try:
         rows = (
             db.table("pyq_bank_v2")
@@ -143,13 +179,7 @@ def fetch_coverage(_cache_key: str) -> dict:
             .execute()
         ).data or []
         for row in rows:
-            payload = row.get("question_payload") or {}
-            board   = str(payload.get("board") or "").strip()
-            cls     = payload.get("class_num")
-            subject = str(payload.get("subject") or "").strip()
-            if board and cls is not None and subject:
-                key = (board, int(cls), subject)
-                coverage[key] = coverage.get(key, 0) + 1
+            _bump_coverage(coverage, row.get("question_payload") or {})
     except Exception:
         pass
 
@@ -412,7 +442,12 @@ def page_command_centre():
 
         ac_c1, ac_c2, ac_c3, ac_c4 = st.columns([1, 1, 1, 1])
         ac_limit   = ac_c1.number_input("Batch size",  min_value=1, max_value=20, value=3, key="ac_limit")
-        ac_segment = ac_c2.selectbox("Segment", ["school", "competitive", "it"], key="ac_segment")
+        ac_segment = ac_c2.selectbox(
+            "Segment",
+            ["school", "entrance", "recruitment", "competitive", "it"],
+            key="ac_segment",
+            help="'competitive' is the legacy combined alias — prefer 'entrance' (JEE/NEET/CAT/GATE) or 'recruitment' (WBPSC/SSC/UPSC).",
+        )
         ac_delay   = ac_c3.number_input("Delay (s)",   min_value=0.0, max_value=30.0, value=3.0, step=0.5, key="ac_delay")
         ac_mcqs    = ac_c4.number_input("MCQs / run",  min_value=3,   max_value=20,   value=10, key="ac_mcqs")
 
@@ -938,6 +973,11 @@ def _approve_item(db: Client, row: dict, data_type: str):
         "verified_by_human": True,
     }
 
+    # Lift scope+nature to top-level columns. Fall back to the triage row's
+    # own top-level values (populated by supabase_loader) or to raw_data copies.
+    scope_val  = row.get("scope")  or raw.get("scope")
+    nature_val = row.get("nature") or raw.get("nature")
+
     if data_type == "pyq":
         target     = "pyq_bank_v2"
         insert_row = {
@@ -958,8 +998,33 @@ def _approve_item(db: Client, row: dict, data_type: str):
             "verified_by_human": True,
         }
 
+    # Add scope/nature only if we have values. The migration
+    # (scripts/add_scope_nature.sql) adds these columns to both tables; until
+    # it runs on a given DB, we strip them on PGRST204 and retry.
+    if scope_val:
+        insert_row["scope"] = scope_val
+    if nature_val:
+        insert_row["nature"] = nature_val
+
+    def _do_insert(payload: dict) -> None:
+        db.table(target).insert(payload).execute()
+
     try:
-        db.table(target).insert(insert_row).execute()
+        try:
+            _do_insert(insert_row)
+        except Exception as e_inner:
+            msg = str(e_inner).lower()
+            if "scope" in msg or "nature" in msg:
+                # Migration not applied yet — retry without the new columns.
+                insert_row.pop("scope", None)
+                insert_row.pop("nature", None)
+                _do_insert(insert_row)
+                st.info(
+                    "scope/nature columns not yet in this DB — inserted without. "
+                    "Run scripts/add_scope_nature.sql to enable filtering."
+                )
+            else:
+                raise
         db.table("ingestion_triage_queue").update({"status": "approved"}).eq("id", row["id"]).execute()
         st.toast(f"✅ Approved → {target}", icon="✅")
     except Exception as e:
