@@ -85,7 +85,7 @@ def _build_metadata(
     ``metadata->>exam`` — so this MUST match the Sidebar.tsx id.
     """
     meta: dict = {
-        "exam":             exam_slug,  # web filter key — must match Sidebar id
+        "exam":             exam_slug.lower(),  # web filter key — must match Sidebar id (always lowercase)
         "exam_code":        exam_slug,  # alias for admin filtering
         "provenance_tier":  SourceType.llm_knowledge.value,
         "source_type":      SourceType.llm_knowledge.value,
