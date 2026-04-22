@@ -978,11 +978,27 @@ def _approve_item(db: Client, row: dict, data_type: str):
     scope_val  = row.get("scope")  or raw.get("scope")
     nature_val = row.get("nature") or raw.get("nature")
 
+    # Forward metadata from raw_data → target table's metadata column.
+    # The web queries metadata->>exam, provenance_tier, etc. — without this
+    # approved rows are invisible to the frontend.
+    forwarded_meta = raw.get("metadata") or {}
+    # Also embed board/class/subject/exam for queryability
+    if raw.get("board"):
+        forwarded_meta.setdefault("board", raw["board"])
+    if raw.get("class_num") is not None:
+        forwarded_meta.setdefault("class", f"class-{raw['class_num']}" if isinstance(raw["class_num"], int) else str(raw["class_num"]))
+    if raw.get("subject"):
+        forwarded_meta.setdefault("subject", raw["subject"])
+    if raw.get("exam"):
+        forwarded_meta.setdefault("exam", raw["exam"])
+
     if data_type == "pyq":
         target     = "pyq_bank_v2"
         insert_row = {
             **_common,
             "question_payload": raw,
+            "metadata":          forwarded_meta,
+            "difficulty":        raw.get("difficulty", "medium"),
             "ai_accuracy_score": score,
             "validation_flags":  row.get("validation_flags") or [],
         }
@@ -994,6 +1010,8 @@ def _approve_item(db: Client, row: dict, data_type: str):
             "hierarchy_node_id": None,
             "region_id":         None,
             "data_payload":      raw,
+            "metadata":          forwarded_meta,
+            "material_type":     "notes",
             "probability_score": score,
             "verified_by_human": True,
         }

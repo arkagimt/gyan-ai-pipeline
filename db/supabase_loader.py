@@ -54,6 +54,8 @@ _FORWARDED_METADATA_KEYS = (
     "provenance_tier",     # SourceType enum value — credibility tier for Trust Chip
     "confidence",          # 0–100 quality score
     "scope_flag",          # "beyond_outline" for MCQs outside official skills outline
+    "exam",                # sidebar nav-node id — web queries metadata->>exam
+    "exam_code",           # alias for admin filtering
 )
 
 

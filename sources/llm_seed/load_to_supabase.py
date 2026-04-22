@@ -78,8 +78,15 @@ def _build_metadata(
     known_issue_seqs: set[int],
     seq: int | None = None,
 ) -> dict:
-    """Build the metadata dict forwarded into supabase_loader."""
+    """Build the metadata dict forwarded into supabase_loader.
+
+    ``exam`` is the sidebar nav-node id (e.g. ``"az-900"``).
+    PlatformContext.tsx derives slug from activePath and queries
+    ``metadata->>exam`` — so this MUST match the Sidebar.tsx id.
+    """
     meta: dict = {
+        "exam":             exam_slug,  # web filter key — must match Sidebar id
+        "exam_code":        exam_slug,  # alias for admin filtering
         "provenance_tier":  SourceType.llm_knowledge.value,
         "source_type":      SourceType.llm_knowledge.value,
         "source_url":       SOURCE_URLS.get(exam_slug, ""),
