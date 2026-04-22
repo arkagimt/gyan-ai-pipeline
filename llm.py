@@ -45,6 +45,7 @@ from instructor.exceptions import InstructorRetryException
 from config import (
     GROQ_API_KEY, GROQ_MODEL,
     SARVAM_API_KEY, SARVAM_MODEL, SARVAM_BASE_URL,
+    ANTHROPIC_API_KEY, ANTHROPIC_MODEL,
     PHOENIX_ENDPOINT,
     emit_progress,
 )
@@ -201,6 +202,43 @@ def _make_sarvam_client() -> _InstructorClient | None:
         return None
 
 
+@functools.lru_cache(maxsize=1)
+def _make_anthropic_client() -> _InstructorClient | None:
+    """
+    Anthropic Claude — frontier model for Sutradhar's English synthesis and
+    Vidushak's adversarial critique. Reached via `model_hint="anthropic"`.
+
+    We deliberately leave `supports_languages` empty: we do NOT want this
+    provider picked automatically by language routing. Callers opt in with
+    model_hint — so every other agent keeps Groq by default and the cost
+    envelope stays predictable.
+
+    Fails silently (returns None) if:
+      - ANTHROPIC_API_KEY is unset (dev machine without key)
+      - `anthropic` pip dep isn't installed
+      - instructor.from_anthropic hits an import-time issue
+    The router then ignores model_hint="anthropic" and falls through to
+    language routing, so pipeline runs stay green.
+    """
+    if not ANTHROPIC_API_KEY:
+        return None
+    try:
+        from anthropic import Anthropic
+        return instructor.from_anthropic(
+            Anthropic(api_key=ANTHROPIC_API_KEY),
+            mode=instructor.Mode.ANTHROPIC_JSON,
+        )
+    except ImportError:
+        emit_progress(
+            "[llm] Anthropic key set but `anthropic` pip dep missing — "
+            "run `pip install anthropic` to enable Opus routing."
+        )
+        return None
+    except Exception as e:
+        emit_progress(f"[llm] Anthropic client init failed: {e} — Opus routing disabled")
+        return None
+
+
 # Register built-ins at import time.
 register_provider(Provider(
     name               = "groq",
@@ -213,6 +251,12 @@ register_provider(Provider(
     model              = SARVAM_MODEL,
     client_factory     = _make_sarvam_client,
     supports_languages = ("bn", "hi", "ta", "te", "ml", "kn", "gu", "mr"),  # Indic
+))
+register_provider(Provider(
+    name               = "anthropic",
+    model              = ANTHROPIC_MODEL,
+    client_factory     = _make_anthropic_client,
+    supports_languages = (),          # opt-in only — callers must pass model_hint="anthropic"
 ))
 
 

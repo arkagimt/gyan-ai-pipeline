@@ -21,6 +21,7 @@ SUPABASE_URL         = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 GROQ_API_KEY         = os.environ.get("GROQ_API_KEY", "")
 SARVAM_API_KEY       = os.environ.get("SARVAM_API_KEY", "")
+ANTHROPIC_API_KEY    = os.environ.get("ANTHROPIC_API_KEY", "")
 
 # LLM models
 GROQ_MODEL           = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
@@ -31,6 +32,17 @@ GROQ_API_URL         = "https://api.groq.com/openai/v1/chat/completions"
 # API docs: https://www.sarvam.ai/apis
 SARVAM_MODEL         = os.environ.get("SARVAM_MODEL", "sarvam-m")
 SARVAM_BASE_URL      = "https://api.sarvam.ai/v1"
+
+# Anthropic Claude — frontier model, used by Sutradhar (English synthesis) and
+# Vidushak (adversarial critic) where quality uplift is worth the cost delta.
+# Every other agent keeps the Groq/Llama default (fine for structured tagging,
+# JSON coercion, safety checks). If ANTHROPIC_API_KEY is absent, the provider
+# silently fails to register and model_hint="anthropic" falls through to
+# language routing (Groq) — so nothing breaks without the key, things just
+# get cheaper + lower-quality.
+# Model slug: pick the latest available Opus when wiring prod. For registry
+# default we use the documented slug; override in env to test newer models.
+ANTHROPIC_MODEL      = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-5")
 
 # Observability — optional Arize Phoenix endpoint
 # Set to run local Phoenix: PHOENIX_ENDPOINT=http://localhost:6006

@@ -11,6 +11,13 @@ requests>=2.31
 # Uses OpenAI-compatible client — openai is a transitive dep of instructor
 openai>=1.0
 
+# ── Anthropic Claude (Opus) — frontier model for Sutradhar English synthesis
+# + Vidushak adversarial critic. Opt-in via model_hint="anthropic" in agent
+# call sites. If ANTHROPIC_API_KEY is unset, the provider fails to register
+# and pipeline silently falls back to Groq — so this dep is safe to install
+# everywhere, and safe to skip installing on workers that don't need Opus.
+anthropic>=0.34
+
 # ── Observability (optional — install to enable Phoenix tracing)
 # pip install arize-phoenix-otel \
 #             openinference-instrumentation-groq \

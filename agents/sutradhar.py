@@ -217,6 +217,10 @@ def run(report: ValidationReport) -> StudyPackage:
     user_prompt = _build_user_prompt(report)
     last_error: Exception | None = None
 
+    # Model selection: default language routing — Groq/Llama for English,
+    # Sarvam-M for Indic. Opus opt-in (model_hint="anthropic") is intentionally
+    # OFF for the pre-investment pilot; flip on per-call when budget allows.
+    # The provider is still registered in llm.py so this is a one-line change.
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             # ── Step 1: Generate ─────────────────────────────────────────────

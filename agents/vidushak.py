@@ -297,6 +297,9 @@ def verify_and_repair(
     }
 
     # ── Step 1: Audit ─────────────────────────────────────────────────────────
+    # Default routing: Groq/Llama. Opus opt-in is OFF for the pre-investment
+    # pilot. When budget allows, add `model_hint="anthropic"` — the provider
+    # is already registered in llm.py.
     try:
         verification: MCQBatchVerification = call_llm(
             system         = _VERIFIER_SYSTEM,
@@ -337,6 +340,13 @@ def verify_and_repair(
     fixed = list(mcqs)
     prompt_cfg = get_agent_prompt("sutradhar")   # fixer uses sutradhar's creative prompt
 
+    # Repair generates NEW MCQ text, so language matters here (unlike the audit
+    # which only reasons about content). For Bengali boards, explicitly route
+    # to Sarvam via language="bn"; otherwise default (Groq for English).
+    # Opus opt-in deliberately OFF pre-investment.
+    is_bengali_board = taxonomy.board in ("WBBSE", "WBCHSE")
+    repair_lang = "bn" if is_bengali_board else "en"
+
     for idx, issue_desc in issues.items():
         if idx >= len(fixed):
             continue
@@ -348,6 +358,7 @@ def verify_and_repair(
                 temperature    = 0.4,
                 max_tokens     = 800,
                 max_retries    = 2,
+                language       = repair_lang,
             )
             fixed[idx] = repaired
             audit["repaired"] += 1
