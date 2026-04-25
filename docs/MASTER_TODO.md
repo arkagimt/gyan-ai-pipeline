@@ -32,6 +32,51 @@ Streamlit polish, and the WCAG a11y backlog. Each wave is ONE coherent commit.
 - [x] **Bodhi tree load**: decision = keep the 500ms-min CSS fallback. Intentional
   `requestIdleCallback` defer until browser idle. No code change.
 
+### Wave 2.6 — Sync audit fixes + matte panel + school sidebar (2026-04-25 night)
+Triggered by user QA round 2 — comprehensive audit of profile tabs, command
+palette, settings sync, and dark theme aesthetics.
+
+Audit findings (FULLY WORKING):
+- Profile tabs (Overview / Settings / Security): all 3 wired correctly
+- Profile dropdown shortcuts: all 3 call setActiveTab properly
+- CommandPalette items: Open Quantum Labs, My Progress, all search items
+  (dispatch GYAN_NAV → PlatformContext listens at line 171, calls router.push)
+- Topbar: Search, SegmentSwitcher, RegionSwitcher, Bell, Lite mode, Dark mode
+- View Learning Analytics toggle (CompetitiveDashboard / ITDashboard)
+- NaradInsights tab switcher (Exam Readiness / Velocity / Spaced / Cross)
+
+Audit findings (REAL BUGS — fixed):
+- [x] **Narad Recommends arrow** — `setExpanded` toggle with no panel attached.
+  Arrow rotated 90° but nothing else happened. Removed expanded state, made
+  the button a real CTA → router.push to segment dashboard.
+- [x] **Exam Readiness cards** (Class 10 Boards, Vidyasagar Science Olympiad,
+  etc.) — `<motion.div>` had no onClick. Now `<motion.button>` with
+  navTargetForProvider() routing to /school | /competitive | /it based on
+  exam.provider lookup. Added focus-visible ring + aria-label.
+- [x] **School Sidebar empty space** in dashboard view — Sidebar was always
+  rendered, taking left column even when no activePath (dashboard view has
+  no tree to drill). Now gated on activePath: dashboard view = no sidebar
+  (full-width content), drilled view = sidebar with nav tree. Particularly
+  ugly in dark mode.
+
+Style decision (locked):
+- [x] **Matte panel for non-IT in dark mode** — IT section's solid dark-card
+  aesthetic is preferred over the glassmorphic / frosted-glass look that
+  school+competitive currently render in dark mode. Components hardcoded
+  bg-white/X + backdrop-blur-Y instead of theme tokens, so the dark-mode
+  token system was bypassed. Added a CSS-side override block in globals.css
+  that **only** activates when data-dark="true": disables backdrop-filter,
+  remaps bg-white/X → var(--theme-card), border-white/X → var(--theme-border),
+  text-charcoal → var(--theme-text). Light mode UNTOUCHED — glassmorphic
+  stays for light themes which it suits. IT segments unaffected (already
+  matte). Trade-off acknowledged: !important is required because Tailwind
+  utilities are specificity-equivalent. This is the least-bad way to land
+  the look fix without a 30-file component sweep.
+
+Audit findings (NOT bugs, roadmapped):
+- Sarbagya chat → Wave 8 (already in TODO)
+- Cross-segment foundation recommendations → Wave 7 Part B
+
 ### Wave 2 — ExamModePlayer (UNIVERSAL across school + competitive + IT)
 - [x] `gyan-ai-web/src/components/exam/ExamModePlayer.tsx` — PearsonVue-style player with
   intro / in-progress / submitted phases, age-adaptive defaults, localStorage resume,
