@@ -43,6 +43,7 @@ from sources.llm_seed.audit import EXAM_TAXONOMIES                         # noq
 BATCH_SIZE = 25
 SOURCE_URLS: dict[str, str] = {
     "az-900": "https://learn.microsoft.com/en-us/credentials/certifications/azure-fundamentals/",
+    "ai-900": "https://learn.microsoft.com/en-us/credentials/certifications/azure-ai-fundamentals/",
 }
 
 

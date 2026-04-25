@@ -69,6 +69,13 @@ EXAM_TAXONOMIES: dict[str, TaxonomySlice] = {
         topic    = "Microsoft Azure Fundamentals",
         count    = 1,   # placeholder — vidushak doesn't read .count
     ),
+    "ai-900": TaxonomySlice(
+        segment  = Segment.it,
+        provider = "Microsoft",
+        exam     = "AI-900",
+        topic    = "Microsoft Azure AI Fundamentals",
+        count    = 1,
+    ),
     # Future:
     # "clf-c02": TaxonomySlice(segment=Segment.it, provider="AWS",
     #                          exam="CLF-C02",

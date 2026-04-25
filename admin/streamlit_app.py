@@ -433,6 +433,25 @@ def page_command_centre():
 
     st.markdown("---")
 
+    # ── 🌍 Global IT Certifications coverage ──────────────────────────────────
+    st.subheader("🌍 Global IT Certifications")
+    st.caption("% of cert domains with ≥ 5 MCQs per provider (parallel to school boards)")
+
+    it_cols = st.columns(max(1, min(4, len(IT_TREE))))
+    for idx, (provider, exam_map) in enumerate(IT_TREE.items()):
+        total, covered = 0, 0
+        for exam, topics in exam_map.items():
+            for topic in topics:
+                total += 1
+                count = coverage.get((provider, exam, topic), 0)
+                covered += (1 if count >= 5 else 0)
+        pct = (covered / total) if total else 0
+        with it_cols[idx % len(it_cols)]:
+            st.caption(f"**{provider}**")
+            st.progress(pct, text=f"{covered}/{total} domains ({pct:.0%})")
+
+    st.markdown("---")
+
     # ── আচার্য — Autonomous batch orchestrator (Phase 10) ─────────────────────
     with st.expander("🪔 **আচার্য — Autonomous Batch Orchestrator**  ·  fire গণক's top-N as GitHub workflows", expanded=False):
         st.caption(
@@ -800,6 +819,27 @@ def page_coverage_map():
                         }
                         st.session_state["page"] = "🚀 Smart Pipeline"
                         st.rerun()
+
+    # ── 🌍 Global IT Certifications heatmap ───────────────────────────────────
+    st.markdown("---")
+    st.subheader("🌍 Global IT Certifications — Domain Coverage")
+    st.caption("Per-provider drill-down: red = 0 MCQs, green ≥ 10. Uses (provider, exam, topic) keys.")
+
+    for provider, exam_map in IT_TREE.items():
+        with st.expander(f"**{provider}**", expanded=False):
+            for exam, topics in exam_map.items():
+                st.markdown(f"*{exam}*")
+                if not topics:
+                    st.caption("_No topics registered._")
+                    continue
+                cols = st.columns(min(4, max(1, len(topics))))
+                for i, topic in enumerate(topics):
+                    count = coverage.get((provider, exam, topic), 0)
+                    badge = _coverage_badge(count)
+                    with cols[i % len(cols)]:
+                        # truncate long topic names for the metric label
+                        label = topic if len(topic) <= 26 else topic[:24] + "…"
+                        st.metric(label, badge, help=topic)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
