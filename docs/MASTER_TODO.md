@@ -1,7 +1,7 @@
 # Gyan AI — MASTER TODO
 ### Cross-repo action list (pipeline + web)
 
-**Last updated:** 2026-04-20
+**Last updated:** 2026-04-25
 **Related files:**
 - `gyan-ai-pipeline/SANJAYA_CHRONICLES.md` — pipeline phase roadmap
 - `gyan-ai-web/UI_OVERHAUL_TODO.md` — UI phase roadmap
@@ -132,7 +132,7 @@ Hand-rolled (no next-pwa / no Workbox dep). All wiring in place; `tsc --noEmit` 
 - [ ] GitHub Actions `run_acharya_nightly.yml` — `cron: '30 21 * * *'` (03:00 IST) — `python -m scripts.run_acharya --limit 3 --delay 5`.
 - [ ] GitHub Actions `run_vaidya_weekly.yml` — Sunday 02:30 UTC (08:00 IST) — posts to Telegram/Discord webhook on fail_count > 0.
 - [ ] Eval CI gate — `scripts/run_eval.py --limit 30` on every `main` push; fail CI if clean-rate < 80%.
-- [ ] Run `scripts/setup_health_log.sql` + `scripts/add_scope_nature.sql` in Supabase (user action).
+- [ ] Run `scripts/setup_health_log.sql` + `scripts/add_scope_nature.sql` in Supabase (user action). ⚠️ `add_scope_nature.sql` (web version `migration_scope_nature.sql`) was run 2026-04-19. Pipeline version is idempotent, safe to re-run. `setup_health_log.sql` still pending.
 
 ## 🎯 Day 5 — Seed real content (🧑‍💼 **Arka-owned**)
 
@@ -158,7 +158,7 @@ Hand-rolled (no next-pwa / no Workbox dep). All wiring in place; `tsc --noEmit` 
   - **IT:** AWS SAA-C03 + AZ-900 — every domain (≥10 MCQs per domain ≈ 120 MCQs).
   - **Total target: ~500 MCQs** — also hits **SC-001** milestone which unlocks DSPy Phase 9.
 - [ ] 🧑‍💼 Manually review 20 random MCQs in `/admin/triage` per dispatched batch — catch systemic issues before they scale.
-- [ ] Run Lighthouse on home + `/school` dashboard; fix top 2 offenders.
+- [x] Run Lighthouse on home + `/school` dashboard; fix top 2 offenders. ✅ 2026-04-25: All 4 URLs pass all budgets (Perf 96–98, A11y 95–100, LCP ≤1305ms, TBT ≤38ms, CLS ≤0.007). Config fixed (budgetsFile conflict removed).
 - [ ] Smoke-test trust chips visibly populated on 10 random MCQs (regression check on Day 1 fix).
 - [ ] Claude assists: analyse coverage gaps per Vaidya / Ganak report; suggest next 5 dispatches.
 
@@ -175,7 +175,7 @@ Hand-rolled (no next-pwa / no Workbox dep). All wiring in place; `tsc --noEmit` 
 ### Content moat
 - [ ] Teacher PYQ upload (`/admin/teacher-upload`) — Phase 6.2.
 - [ ] UGC triage flow for `question_flags` (was Day 4, deepen here).
-- [ ] Tag every IT MCQ to an `itBlueprints` domain — makes coverage bars truthful.
+- [x] Tag every IT MCQ to an `itBlueprints` domain — makes coverage bars truthful. ✅ 2026-04-25: Domain filter `<select>` in ContentPanel + ITBlueprintBars reads from `assessment_logs` (fuzzy topic→domain match, falls back to localStorage).
 - [ ] WhatsApp weekly report for parents (`/api/reports/weekly`).
 
 ### UX depth
