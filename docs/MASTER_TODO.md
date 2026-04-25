@@ -18,23 +18,19 @@ Sequenced rollout consolidating: PearsonVue-style MCQ player, light/dark theme r
 Streamlit polish, and the WCAG a11y backlog. Each wave is ONE coherent commit.
 
 ### Wave 2.5 — Hotfix sweep (post-Wave-2 user QA findings, 2026-04-25 evening)
-- [ ] **Palette congestion**: drop `xl:grid-cols-10` in `QuestionPalette.tsx` → stay at 5
-  cols on lg+ (5 × 20 = 100, far more readable). Widen aside from 240→280px in
-  `ExamModePlayer.tsx` so tiles get ~46px each.
-- [ ] **Remove "SCHOOL SECTION" header** from `Sidebar.tsx:420` — it appears only on
-  school (IT/competitive don't render Sidebar at all → inconsistent). The page content
-  makes the segment obvious.
-- [ ] **Add back/exit chip to Quantum Lab** (`app/labs/quantum/page.tsx`) — floating
-  "← Exit Quantum" top-left, calls router.back() with a fallback to '/profile'.
-- [ ] **Remove dead "Talk to Sarbajna" link** from `CommandPalette.tsx:120-128` — it
-  pushes to `/?agent=sarbajna` but nothing reads that param. Wave 7+ builds a real
-  chat panel; for now removing the broken affordance is honest.
-- [ ] **Remove "Activate Quantum Theme" command** from CommandPalette — vestigial
-  toggle that conflicts with the segment-theme system. The Topbar Sun/Moon toggle
-  is the single dark/light control going forward.
-- [ ] **Bodhi tree load**: keep the 500ms-min CSS fallback — it's intentional
-  (`requestIdleCallback` defers GLB load until browser idle). Decision recorded; no
-  code change.
+- [x] **Palette congestion**: dropped `xl:grid-cols-10` in `QuestionPalette.tsx`,
+  bumped gap to 2, used aspect-square + min-w-40px tiles, widened aside in
+  `ExamModePlayer.tsx` from 240→300px. 5 × 20 grid renders comfortably now.
+- [x] **Removed "SCHOOL SECTION" header** from `Sidebar.tsx`.
+- [x] **Added back/exit chip to Quantum Lab** — floating "← Exit Quantum" top-left,
+  uses router.back() with /profile fallback.
+- [x] **Removed dead "Talk to Sarbajna" link** from CommandPalette. Real chat panel
+  is queued as Wave 8 below.
+- [x] **Removed "Activate Quantum Theme" command** from CommandPalette + the
+  toggleTheme handler + the quantumActive state. Topbar Sun/Moon is the single
+  source of truth for dark/light.
+- [x] **Bodhi tree load**: decision = keep the 500ms-min CSS fallback. Intentional
+  `requestIdleCallback` defer until browser idle. No code change.
 
 ### Wave 2 — ExamModePlayer (UNIVERSAL across school + competitive + IT)
 - [x] `gyan-ai-web/src/components/exam/ExamModePlayer.tsx` — PearsonVue-style player with
@@ -106,6 +102,28 @@ UX/recommendations don't surface this.
   persists but nothing reads it for routing — fix this loop.
 - [ ] Verify Topbar segment switcher (if exists) actually swaps context. If not,
   build it as a 3-icon row (school / competitive / IT) with active state.
+
+### Wave 8 — Sarbagya AI Chat panel (NEW, replaces broken "Talk to Sarbajna")
+
+The Wave 2.5 link removal is honest — the destination didn't exist. But the
+*concept* is wanted: a slide-in chat drawer where the student can ask
+Sarbagya (the all-knowing scout agent, AGENTS.md ID 1) anything about their
+syllabus. Build properly:
+
+- [ ] Create `<SarbagyaChatDrawer>` — slide-in from right, Cmd+/ to open
+- [ ] Backend route `app/api/sarbagya/route.ts` — proxies through the LLM
+  router (Phase 19), uses Groq/Llama default + Sarvam-M for Bengali
+- [ ] Inject student context: `primary_segment`, recent topics, mastery
+  weak-spots — so questions like "explain VPC" get answered through the
+  AZ-900 lens for an Azure student or generic for everyone else
+- [ ] Source citation: every answer surfaces which textbook/section it
+  came from (or marks "general knowledge" — important for trust chips)
+- [ ] Re-add the "Talk to Sarbagya" item to CommandPalette + add a
+  floating button on dashboards
+- [ ] Quota / rate-limit: 50 questions / day for free users, unlimited
+  for paid (Phase 22 monetisation)
+- [ ] Safety: every reply runs through Dharmarakshak / Llama-Guard 3
+  before display (same pipeline that gates content)
 
 ### Wave 6 (post-sprint) — Polish from frontend-design audit
 - [ ] Display+body font pair for IT section (currently single `font-sans`)
