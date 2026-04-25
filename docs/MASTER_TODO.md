@@ -17,6 +17,25 @@
 Sequenced rollout consolidating: PearsonVue-style MCQ player, light/dark theme redesign,
 Streamlit polish, and the WCAG a11y backlog. Each wave is ONE coherent commit.
 
+### Wave 2.5 — Hotfix sweep (post-Wave-2 user QA findings, 2026-04-25 evening)
+- [ ] **Palette congestion**: drop `xl:grid-cols-10` in `QuestionPalette.tsx` → stay at 5
+  cols on lg+ (5 × 20 = 100, far more readable). Widen aside from 240→280px in
+  `ExamModePlayer.tsx` so tiles get ~46px each.
+- [ ] **Remove "SCHOOL SECTION" header** from `Sidebar.tsx:420` — it appears only on
+  school (IT/competitive don't render Sidebar at all → inconsistent). The page content
+  makes the segment obvious.
+- [ ] **Add back/exit chip to Quantum Lab** (`app/labs/quantum/page.tsx`) — floating
+  "← Exit Quantum" top-left, calls router.back() with a fallback to '/profile'.
+- [ ] **Remove dead "Talk to Sarbajna" link** from `CommandPalette.tsx:120-128` — it
+  pushes to `/?agent=sarbajna` but nothing reads that param. Wave 7+ builds a real
+  chat panel; for now removing the broken affordance is honest.
+- [ ] **Remove "Activate Quantum Theme" command** from CommandPalette — vestigial
+  toggle that conflicts with the segment-theme system. The Topbar Sun/Moon toggle
+  is the single dark/light control going forward.
+- [ ] **Bodhi tree load**: keep the 500ms-min CSS fallback — it's intentional
+  (`requestIdleCallback` defers GLB load until browser idle). Decision recorded; no
+  code change.
+
 ### Wave 2 — ExamModePlayer (UNIVERSAL across school + competitive + IT)
 - [x] `gyan-ai-web/src/components/exam/ExamModePlayer.tsx` — PearsonVue-style player with
   intro / in-progress / submitted phases, age-adaptive defaults, localStorage resume,
@@ -59,6 +78,34 @@ dark cyberpunk untouched.
 - [ ] Add `focus-visible:` ring styles project-wide (WCAG 2.4.7 blocker)
 - [ ] De-duplicate school sidebar vs SchoolDashboard tree on PC view (Observation 1)
 - [ ] Replace remaining `text-charcoal/30`, `bg-saffron/15`, etc hardcodes with theme tokens
+
+### Wave 7 — Cross-segment access architecture (NEW, 2026-04-25 strategic)
+
+**Decision locked:** segments are LENSES, not WALLS. UPSC aspirants live on NCERT
+6-12. JEE/NEET on NCERT 11-12. WBCS on WBBSE textbooks. Real users cross-pollinate
+constantly. The current code already permits navigation to any segment — but the
+UX/recommendations don't surface this.
+
+- [ ] Rename `user_metadata.segment` → `user_metadata.primary_segment` (with a
+  one-time migration in `Auth.tsx` / `profile/page.tsx`).
+- [ ] Add `user_metadata.also_explores: string[]` (e.g.
+  `["school/wbbse/class-9", "school/cbse/class-10"]`) — captures explicit
+  cross-segment interest. Used by Acharya for prioritising content + by web for
+  surfacing cross-links.
+- [ ] Reframe Profile copy: "Primary lens · You can browse any section anytime."
+- [ ] Make `/` (home) honour `primary_segment` — redirect to the segment dashboard
+  on first visit but show a discoverable "Switch lens" affordance.
+- [ ] Add cross-segment "Foundation" recommendations to dashboards:
+  - `/competitive` UPSC users → "Build foundation: NCERT Class 8 Geography, Class 10 Polity"
+  - `/competitive` WBCS users → "Build foundation: WBBSE Class 9 History, Class 10 Geography"
+  - `/competitive` JEE/NEET → "Build foundation: NCERT Class 11-12 Physics/Chemistry/Biology"
+- [ ] When a competitive student visits /school content, show a discreet banner:
+  "📚 Building foundation for UPSC. Your competitive recommendations remain unchanged."
+- [ ] **Verify settings sync end-to-end**: region, language, theme, primary_segment
+  all persist AND drive the actual UI on next login. Currently `handleSaveSegment`
+  persists but nothing reads it for routing — fix this loop.
+- [ ] Verify Topbar segment switcher (if exists) actually swaps context. If not,
+  build it as a 3-icon row (school / competitive / IT) with active state.
 
 ### Wave 6 (post-sprint) — Polish from frontend-design audit
 - [ ] Display+body font pair for IT section (currently single `font-sans`)
