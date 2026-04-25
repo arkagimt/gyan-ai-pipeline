@@ -4,11 +4,75 @@
 **Last updated:** 2026-04-25
 **Related files:**
 - `gyan-ai-pipeline/SANJAYA_CHRONICLES.md` — pipeline phase roadmap
-- `gyan-ai-web/UI_OVERHAUL_TODO.md` — UI phase roadmap
+- `gyan-ai-web/UI_OVERHAUL_TODO.md` — UI phase roadmap (now subordinate to this file's Wave Program)
 - `gyan-ai-pipeline/AGENTS.md` — agent registry
 - `gyan-ai-pipeline/SCOPE_DECISIONS.md` — board/exam inclusion decisions
 
 **Source of truth:** this file aggregates both repos' outstanding work + the MVP launch sequencing. When something is shipped, tick the box **here first**, then in the repo-local file.
+
+---
+
+## 🌟 2026-04-25 Wave Program — UI redesign + ExamMode + a11y
+
+Sequenced rollout consolidating: PearsonVue-style MCQ player, light/dark theme redesign,
+Streamlit polish, and the WCAG a11y backlog. Each wave is ONE coherent commit.
+
+### Wave 2 — ExamModePlayer (UNIVERSAL across school + competitive + IT)
+- [x] `gyan-ai-web/src/components/exam/ExamModePlayer.tsx` — PearsonVue-style player with
+  intro / in-progress / submitted phases, age-adaptive defaults, localStorage resume,
+  keyboard nav (← → F S), aria-labels everywhere, focus-visible rings.
+- [x] `gyan-ai-web/src/components/exam/QuestionPalette.tsx` — accessible 10×N grid,
+  color-coded (answered / unanswered / flagged / correct / wrong).
+- [x] `gyan-ai-web/src/components/exam/ExamResultsScreen.tsx` — score hero, count tiles,
+  per-domain breakdown (IT only), review-all CTA.
+- [x] `gyan-ai-web/src/components/ContentPanel.tsx` — replaces `<PYQCards>` (kept as
+  print-only fallback). Domain-by-idx mapping passed for IT per-domain results.
+- [x] Age-adaptive defaults baked in:
+  - IT certs / competitive       → exam mode, 60min, batch 100
+  - School class 9-12             → exam mode, 60min, batch 50
+  - School class 6-8              → review mode, no timer, batch 20
+  - School class 1-5              → review mode, no timer, batch 10
+- [x] TSC clean, ESLint clean on touched files (project-wide pre-existing lint debt unrelated)
+
+### Wave 3 — Light/dark theme redesign (NON-IT only)
+*Locked direction:* "Bengali Manuscript Warmth" — parchment + indigo + saffron + teal,
+Cormorant Garamond display + Inter Tight body. IT's `data-theme="aws|azure|...|"`
+dark cyberpunk untouched.
+- [ ] Update `gyan-ai-web/src/app/globals.css` `:root` and `[data-theme="school"]` palettes
+- [ ] Add font imports (Cormorant Garamond + Inter Tight) via Next.js `app/layout.tsx`
+- [ ] Replace 20 raw `text-gray-*` / `text-slate-*` usages with `text-text-muted` token
+- [ ] Replace `bg-white/30`, `text-charcoal` hardcodes in school/competitive pages
+- [ ] Fix `competitive/page.tsx:87` tab dark-mode regression
+- [ ] Sanity-check IT pages still render their own dark theme correctly
+
+### Wave 4 — Streamlit polish (capped by framework)
+- [ ] `admin/.streamlit/config.toml` — brand colours (saffron primary, teal secondary)
+- [ ] Tighten 4-5 `st.markdown` blocks for visual consistency
+- [ ] Prune confusing nested expanders in Coverage Map
+- [ ] **Fix IT_TREE key mismatch** — `curriculum.py` uses verbose names ("AZ-900 Azure
+  Fundamentals", "Cloud Concepts"); DB writes short slugs. Either normalise IT_TREE keys
+  to match DB or add a key-alias mapping in `_bump_coverage`. **This is why Global IT
+  shows 0% in Command Centre / Coverage Map despite my 2026-04-25 widget commit.**
+
+### Wave 5 — P0 a11y + bugfix sweep
+- [ ] Add `aria-label` to all 86 unlabelled `<button>` elements (WCAG 2.1 AA blocker)
+- [ ] Add `focus-visible:` ring styles project-wide (WCAG 2.4.7 blocker)
+- [ ] De-duplicate school sidebar vs SchoolDashboard tree on PC view (Observation 1)
+- [ ] Replace remaining `text-charcoal/30`, `bg-saffron/15`, etc hardcodes with theme tokens
+
+### Wave 6 (post-sprint) — Polish from frontend-design audit
+- [ ] Display+body font pair for IT section (currently single `font-sans`)
+- [ ] Trust-chip redesign as brand moment (still functional, more memorable)
+- [ ] Empty-state ("Scout AI on a mission") tonal alignment
+- [ ] Visual system unity across School/Competitive/IT dashboards (without flattening
+  segment identity)
+
+### Notes
+- Streamlit cannot be "redesigned" the way Next.js can — at most 15-20% better visually.
+- IT dark theme `data-theme="aws|azure|snowflake|anthropic|google-ai|scrum"` is PROTECTED.
+  The cyberpunk slate/emerald aesthetic is committed and tokenised; do not touch.
+- `UI_OVERHAUL_TODO.md` historical phase items still apply but are now sequenced via this
+  Wave Program. When a Wave ships, also tick the corresponding UI_OVERHAUL phase items.
 
 ---
 
