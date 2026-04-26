@@ -1,0 +1,114 @@
+{
+  "exam": "az-104",
+  "timestamp_utc": "20260426T033000Z",
+  "mcq_total": 100,
+  "issues_found": 0,
+  "repaired": 0,
+  "repair_failed": 0,
+  "unresolved": 0,
+  "verdict": "passed",
+  "issue_samples": [],
+  "per_batch": [
+    {
+      "seq_start": 1,
+      "seq_end": 10,
+      "total": 10,
+      "issues_found": 0,
+      "repaired": 0,
+      "repair_failed": 0,
+      "issues": [],
+      "batch_error": "'charmap' codec can't encode characters in position 28-33: character maps to <undefined>"
+    },
+    {
+      "seq_start": 11,
+      "seq_end": 20,
+      "total": 10,
+      "issues_found": 0,
+      "repaired": 0,
+      "repair_failed": 0,
+      "issues": [],
+      "batch_error": "'charmap' codec can't encode characters in position 28-33: character maps to <undefined>"
+    },
+    {
+      "seq_start": 21,
+      "seq_end": 30,
+      "total": 10,
+      "issues_found": 0,
+      "repaired": 0,
+      "repair_failed": 0,
+      "issues": [],
+      "batch_error": "'charmap' codec can't encode characters in position 28-33: character maps to <undefined>"
+    },
+    {
+      "seq_start": 31,
+      "seq_end": 40,
+      "total": 10,
+      "issues_found": 0,
+      "repaired": 0,
+      "repair_failed": 0,
+      "issues": [],
+      "batch_error": "'charmap' codec can't encode characters in position 28-33: character maps to <undefined>"
+    },
+    {
+      "seq_start": 41,
+      "seq_end": 50,
+      "total": 10,
+      "issues_found": 0,
+      "repaired": 0,
+      "repair_failed": 0,
+      "issues": [],
+      "batch_error": "'charmap' codec can't encode characters in position 28-33: character maps to <undefined>"
+    },
+    {
+      "seq_start": 51,
+      "seq_end": 60,
+      "total": 10,
+      "issues_found": 0,
+      "repaired": 0,
+      "repair_failed": 0,
+      "issues": [],
+      "batch_error": "'charmap' codec can't encode characters in position 28-33: character maps to <undefined>"
+    },
+    {
+      "seq_start": 61,
+      "seq_end": 70,
+      "total": 10,
+      "issues_found": 0,
+      "repaired": 0,
+      "repair_failed": 0,
+      "issues": [],
+      "batch_error": "'charmap' codec can't encode characters in position 28-33: character maps to <undefined>"
+    },
+    {
+      "seq_start": 71,
+      "seq_end": 80,
+      "total": 10,
+      "issues_found": 0,
+      "repaired": 0,
+      "repair_failed": 0,
+      "issues": [],
+      "batch_error": "'charmap' codec can't encode characters in position 28-33: character maps to <undefined>"
+    },
+    {
+      "seq_start": 81,
+      "seq_end": 90,
+      "total": 10,
+      "issues_found": 0,
+      "repaired": 0,
+      "repair_failed": 0,
+      "issues": [],
+      "batch_error": "'charmap' codec can't encode characters in position 28-33: character maps to <undefined>"
+    },
+    {
+      "seq_start": 91,
+      "seq_end": 100,
+      "total": 10,
+      "issues_found": 0,
+      "repaired": 0,
+      "repair_failed": 0,
+      "issues": [],
+      "batch_error": "'charmap' codec can't encode characters in position 28-33: character maps to <undefined>"
+    }
+  ],
+  "notes": "Vidushak ran in ungrounded mode (extract=None). The source_disconnect check is skipped for llm_knowledge tier content. Other quality gates (wrong_answer, distractor_correct, two_correct_options, ambiguous, language_mismatch, age_inappropriate) are active."
+}
