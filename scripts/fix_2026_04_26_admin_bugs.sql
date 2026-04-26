@@ -38,20 +38,40 @@ CREATE UNIQUE INDEX IF NOT EXISTS curriculum_sources_with_chapter_uidx
 
 
 -- ── Fix 2 ────────────────────────────────────────────────────────────────────
--- ingestion_triage_queue.rejection_reason column. Used by:
---   • agents/vaidya.py (triage_rate health check)
---   • agents/chitragupta.py (writes the reason on rejection)
---   • models/schemas.py (TriageRow.rejection_reason: Optional[str])
--- Nullable text so historical rows without a reason stay valid.
+-- ingestion_triage_queue audit columns. Used by:
+--   • agents/vaidya.py:180 — `select status, rejection_reason, reviewed_at`
+--                            with `.gte(reviewed_at, since)` for 24h window
+--   • agents/chitragupta.py — writes rejection_reason on auto-reject
+--   • admin/streamlit_app.py — patched in this commit to stamp reviewed_at
+--                              on every approve/reject action
+--
+-- 2026-04-26 patch: original migration only added rejection_reason but
+-- Vaidya also needs reviewed_at. First-run failed on the index that
+-- referenced the missing column. Both ADDs are idempotent so this
+-- migration is safe to re-run after the partial first run.
 
 ALTER TABLE ingestion_triage_queue
   ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+
+ALTER TABLE ingestion_triage_queue
+  ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
+
+-- Optional but useful: who approved/rejected. Captured by future admin UI.
+ALTER TABLE ingestion_triage_queue
+  ADD COLUMN IF NOT EXISTS reviewed_by TEXT;
 
 -- Index for the common Vaidya query: WHERE status='rejected' ORDER BY reviewed_at.
 -- Partial index keeps it tiny — only rejected rows.
 CREATE INDEX IF NOT EXISTS ingestion_triage_queue_rejected_idx
   ON ingestion_triage_queue (reviewed_at DESC)
   WHERE status = 'rejected';
+
+-- Same shape index for the 24h-window scan Vaidya does — covers both
+-- approved + rejected. Partial WHERE reviewed_at IS NOT NULL skips the
+-- big "pending" backlog (468 rows in your last health check).
+CREATE INDEX IF NOT EXISTS ingestion_triage_queue_reviewed_at_idx
+  ON ingestion_triage_queue (reviewed_at DESC)
+  WHERE reviewed_at IS NOT NULL;
 
 
 -- ── Fix 3 (DEFENSIVE) ─────────────────────────────────────────────────────────

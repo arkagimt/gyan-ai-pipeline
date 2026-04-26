@@ -27,7 +27,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from supabase import create_client, Client
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Allow importing pipeline modules from parent directory
 _PIPELINE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1116,16 +1116,32 @@ def _approve_item(db: Client, row: dict, data_type: str):
                 )
             else:
                 raise
-        db.table("ingestion_triage_queue").update({"status": "approved"}).eq("id", row["id"]).execute()
+        # Wave 11 (2026-04-26): stamp reviewed_at + reviewed_by so Vaidya's
+        # 24h triage_rate health check has real data to chew on. Without these,
+        # vaidya.py:177 returns "no items reviewed" forever even after approves.
+        db.table("ingestion_triage_queue").update({
+            "status":      "approved",
+            "reviewed_at": datetime.now(timezone.utc).isoformat(),
+            "reviewed_by": "admin-streamlit",
+        }).eq("id", row["id"]).execute()
         st.toast(f"✅ Approved → {target}", icon="✅")
     except Exception as e:
         st.error(f"❌ Approve failed: {e}")
         st.caption("The error above is the exact DB message — use it to identify any missing column.")
 
 
-def _reject_item(db: Client, item_id: str):
+def _reject_item(db: Client, item_id: str, reason: str | None = None):
     try:
-        db.table("ingestion_triage_queue").update({"status": "rejected"}).eq("id", item_id).execute()
+        # Wave 11 (2026-04-26): stamp reviewed_at + optional rejection_reason
+        # for Vaidya health check observability.
+        update = {
+            "status":      "rejected",
+            "reviewed_at": datetime.now(timezone.utc).isoformat(),
+            "reviewed_by": "admin-streamlit",
+        }
+        if reason:
+            update["rejection_reason"] = reason
+        db.table("ingestion_triage_queue").update(update).eq("id", item_id).execute()
         st.toast("❌ Item rejected.", icon="❌")
     except Exception as e:
         st.error(f"Reject failed: {e}")
