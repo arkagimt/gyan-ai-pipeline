@@ -326,58 +326,163 @@ COMPETITIVE_TREE: dict[str, dict[str, list[str]]] = {**ENTRANCE_TREE, **RECRUITM
 
 # ── IT certifications ─────────────────────────────────────────────────────────
 
+#
+# IT_TREE keys MUST match what `sources/llm_seed/load_to_supabase.py` writes to
+# `pyq_bank_v2.question_payload`:
+#   - provider: matches `TaxonomySlice.provider` exactly (e.g. "Microsoft",
+#     "AWS", "Google Cloud", "Cisco" — note: NOT "Google", which was the old
+#     IT_TREE key — fixed in Wave 4 / 2026-04-26).
+#   - exam:     short code matching `TaxonomySlice.exam` ("AZ-900", "AI-900",
+#     "DP-900", "AZ-104", "DP-600", etc.). Was previously verbose names like
+#     "AZ-900 Azure Fundamentals" → coverage lookups always returned 0.
+#   - topic:    the loader writes the first-MCQ-of-batch's `topic_tag` for
+#     all MCQs in a 25-batch package (see load_to_supabase.py:174). With
+#     100 MCQs / 25 batch = 4 distinct topic_tags actually persist per exam.
+#     The lists below enumerate the topic_tag values present in each
+#     committed seed (extracted by inspecting `mcqs[*].topic_tag` from each
+#     `<exam>-v1.json`). Topics not in the first-of-batch position will not
+#     match coverage — that's a known loader sparsity issue, queued as
+#     Wave 4.5: per-MCQ topic taxonomy in load_to_supabase.py.
+#
 IT_TREE: dict[str, dict[str, list[str]]] = {
     "AWS": {
-        "Cloud Practitioner": [
+        # No AWS seeds loaded to Supabase yet — these are the official
+        # blueprint domain names from each exam guide. Coverage will show 0
+        # until AWS seeds are generated. After Wave 2.8, retired SOA-C02 and
+        # MLS-C01 are dropped; CloudOps Engineer (SOA-C03), ML Engineer
+        # Associate (MLA-C01), and AI Practitioner (AIF-C01) added.
+        "CLF-C02": [
             "Cloud Concepts",
-            "AWS Core Services",
-            "Security & Compliance",
-            "Billing & Pricing",
+            "Security and Compliance",
+            "Cloud Technology and Services",
+            "Billing, Pricing, and Support",
         ],
-        "Solutions Architect Associate": [
-            "EC2 & Compute",
-            "S3 & Storage",
-            "VPC & Networking",
-            "RDS & Databases",
-            "IAM & Security",
-            "High Availability & Fault Tolerance",
+        "SAA-C03": [
+            "Design Secure Architectures",
+            "Design Resilient Architectures",
+            "Design High-Performing Architectures",
+            "Design Cost-Optimized Architectures",
         ],
-        "Developer Associate": [
-            "Lambda & Serverless",
-            "DynamoDB",
-            "API Gateway",
-            "CodePipeline & DevOps",
-            "SQS / SNS / EventBridge",
+        "DVA-C02": [
+            "Development with AWS Services",
+            "Security",
+            "Deployment",
+            "Troubleshooting and Optimization",
+        ],
+        "SOA-C03": [
+            "Monitoring, Logging, and Remediation",
+            "Reliability and Business Continuity",
+            "Deployment, Provisioning, and Automation",
+            "Security and Compliance",
+            "Networking and Content Delivery",
+            "Cost and Performance Optimization",
+        ],
+        "MLA-C01": [
+            "Data Preparation for ML",
+            "ML Model Development",
+            "Deployment and Orchestration of ML Workflows",
+            "ML Solution Monitoring, Maintenance, and Security",
+        ],
+        "AIF-C01": [
+            "Fundamentals of AI and ML",
+            "Fundamentals of Generative AI",
+            "Applications of Foundation Models",
+            "Guidelines for Responsible AI",
+            "Security, Compliance, and Governance for AI Solutions",
         ],
     },
     "Microsoft": {
-        "AZ-900 Azure Fundamentals": [
-            "Cloud Concepts",
-            "Azure Core Services",
-            "Azure Pricing & SLA",
-            "Security & Governance",
+        # All five Microsoft seeds loaded to Supabase 2026-04-22 → 2026-04-26.
+        # Topics are the actual `topic_tag` values present in each seed
+        # JSON. With 25-batch packaging, ~4 of these match coverage data
+        # per exam; the rest will show 0 until Wave 4.5 lands.
+        "AZ-900": [
+            "Describe cloud computing",
+            "Describe the benefits of using cloud services",
+            "Describe cloud service types",
+            "Describe the core architectural components of Azure",
+            "Describe Azure compute and networking services",
+            "Describe Azure storage services",
+            "Describe Azure identity, access, and security",
+            "Describe cost management in Azure",
+            "Describe features and tools in Azure for governance and compliance",
+            "Describe features and tools for managing and deploying Azure resources",
+            "Describe monitoring tools in Azure",
         ],
-        "AZ-104 Azure Administrator": [
-            "Azure AD & Identity",
-            "Virtual Machines",
-            "Storage & Blob",
-            "Virtual Networks",
-            "Monitoring & Backup",
+        "AI-900": [
+            "Identify features of common AI workloads",
+            "Identify guiding principles for responsible AI",
+            "Describe core machine learning concepts",
+            "Identify common machine learning techniques",
+            "Describe Azure Machine Learning capabilities",
+            "Identify common types of computer vision solutions",
+            "Identify Azure tools and services for computer vision tasks",
+            "Identify features of common NLP workload scenarios",
+            "Identify Azure tools and services for NLP workloads",
+            "Identify features of generative AI solutions",
+            "Identify generative AI services and capabilities in Microsoft Azure",
         ],
+        "DP-900": [
+            "Identify roles and responsibilities for data workloads",
+            "Describe common data workloads",
+            "Describe ways to represent data",
+            "Identify options for data storage",
+            "Describe relational concepts",
+            "Describe relational Azure data services",
+            "Describe capabilities of Azure storage",
+            "Describe capabilities and features of Azure Cosmos DB",
+            "Describe common elements of large-scale analytics",
+            "Describe considerations for real-time data analytics",
+            "Describe data visualization in Microsoft Power BI",
+        ],
+        "AZ-104": [
+            "Manage Microsoft Entra users and groups",
+            "Manage access to Azure resources",
+            "Manage Azure subscriptions and governance",
+            "Configure Azure Files and Azure Blob Storage",
+            "Configure Azure Storage security",
+            "Configure access to storage",
+            "Create and configure VMs",
+            "Configure and manage virtual networks",
+            "Configure secure access to virtual networks",
+            "Configure load balancing",
+            "Monitor virtual networking",
+            "Automate deployment of resources by using ARM templates or Bicep files",
+            "Provision and manage containers",
+            "Create and configure Azure App Service",
+            "Monitor resources by using Azure Monitor",
+            "Implement backup and recovery",
+        ],
+        "DP-600": [
+            "Plan a data analytics environment",
+            "Implement and manage a data analytics environment",
+            "Manage the analytics development lifecycle",
+            "Get data from data sources",
+            "Transform data",
+            "Design and build semantic models",
+            "Implement and manage semantic models",
+            "Optimize enterprise-scale semantic models",
+            "Perform exploratory analytics",
+            "Use Microsoft Fabric to expand data analytics capabilities",
+        ],
+        # DP-700 in flight 2026-04-26 — taxonomy ready, content arriving.
     },
-    "Google": {
-        "Associate Cloud Engineer": [
-            "GCP Core Infrastructure",
-            "Compute Engine",
-            "Kubernetes Engine",
-            "Cloud Storage",
-            "IAM & Security",
+    "Google Cloud": {
+        # Was "Google" → renamed to match TaxonomySlice convention. No GCP
+        # seeds loaded yet; topics from official guides.
+        "ACE": [
+            "Setting up a cloud solution environment",
+            "Planning and configuring a cloud solution",
+            "Deploying and implementing a cloud solution",
+            "Ensuring successful operation of a cloud solution",
+            "Configuring access and security",
         ],
-        "Professional Data Engineer": [
-            "BigQuery",
-            "Dataflow & Pub/Sub",
-            "Cloud Spanner & Bigtable",
-            "ML on GCP",
+        "PDE": [
+            "Designing data processing systems",
+            "Ingesting and processing the data",
+            "Storing the data",
+            "Preparing and using data for analysis",
+            "Maintaining and automating data workloads",
         ],
     },
     "Cisco": {
