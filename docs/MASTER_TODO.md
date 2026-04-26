@@ -179,6 +179,43 @@ dark cyberpunk untouched.
 - [ ] De-duplicate school sidebar vs SchoolDashboard tree on PC view (Observation 1)
 - [ ] Replace remaining `text-charcoal/30`, `bg-saffron/15`, etc hardcodes with theme tokens
 
+### Wave 7 Part B — Cross-segment foundation recommendations (2026-04-26)
+
+Completes the "lens not walls" arc. Wave 7 Part A delivered the navigation
+affordance (Topbar SegmentSwitcher + home primary-lens highlight + Profile
+copy reframe). Part B adds the *content recommendation* — small cards that
+say "📚 Build foundation: <relevant school content>" and route the student
+directly to that path.
+
+Shipped:
+- [x] `gyan-ai-web/src/components/CrossSegmentFoundation.tsx` — exam-aware
+  recommendation card. Per-exam mapping covers UPSC family (NCERT 6-12
+  Polity/History/Geography/Economy), entrance exams (JEE/NEET/GATE/CAT all
+  pointing to NCERT 11-12), SSC/Railway/WB Police (WBBSE 8-10 maths +
+  English), bank PO (RBI/SEBI/IBPS PO mapped to economics + commerce). Falls
+  through to a generic encouragement card when no exam picked yet.
+  Theme-aware (parchment + tone-coloured ring), focus-visible, aria-labels.
+- [x] `gyan-ai-web/src/components/CompetitiveDashboard.tsx` — wires
+  `<CrossSegmentFoundation examId={activeExamId} onNavigate={onNavigate} />`
+  between BetalCTA and the main wizard grid. Re-renders as the wizard
+  selects different exams.
+- [x] `gyan-ai-web/src/app/(platform)/school/page.tsx` — discreet "Building
+  foundation for competitive prep / your IT certifications" banner that
+  appears when a non-school-primary user visits /school. Reassures: "Your
+  competitive/IT recommendations stay unchanged." Includes a "Back to
+  [primary]" return chip.
+- [x] PWA cache bumped to `gyan-v4-2026-04-26-cross-segment`.
+
+Still TODO in Wave 7:
+- [ ] `user_metadata.also_explores: string[]` field — explicit cross-segment
+  interest capture. Used by Acharya for prioritising content + by web for
+  surfacing cross-links. Defer until we observe actual cross-segment
+  traffic (Wave 7 Part C, post-launch metrics).
+- [ ] Verify `/` (home) honours `primary_segment` for first-visit redirect
+  vs always showing the segment picker. Current behaviour: card grid
+  always renders with primary highlighted (good), no auto-redirect (good).
+  Decide post-pilot whether to add a "skip picker" toggle in Profile.
+
 ### Wave 7 — Cross-segment access architecture (NEW, 2026-04-25 strategic)
 
 **Decision locked:** segments are LENSES, not WALLS. UPSC aspirants live on NCERT
