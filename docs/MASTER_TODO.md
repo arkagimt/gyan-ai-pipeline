@@ -32,6 +32,38 @@ Streamlit polish, and the WCAG a11y backlog. Each wave is ONE coherent commit.
 - [x] **Bodhi tree load**: decision = keep the 500ms-min CSS fallback. Intentional
   `requestIdleCallback` defer until browser idle. No code change.
 
+### Wave 2.7 — Wildcard CSS + IT-respects-light/dark + SW cache bump (2026-04-25 late)
+
+User reported persisting glass/ghost in 3 spots after Wave 2.6:
+  1. Home page primary lens card (`bg-white/55` slipped through enumerated /20-/90 list)
+  2. Competitive Narad Recommends bar (`bg-red-50` for high-urgency, not covered by /X overrides)
+  3. IT segment in light mode showed cyberpunk dark gradient over light page bg → "ghostly gray"
+
+Fixes:
+- [x] **Wildcard CSS** in `globals.css` — replaced enumerated `.bg-white\/20...90` /
+  `.border-white\/40...70` rules with attribute selectors `[class*="bg-white/"]` and
+  `[class*="border-white/"]`. Catches ALL opacity values incl. arbitrary brackets
+  (`bg-white/[0.04]`, `bg-white/55`, `bg-white/[0.06]` etc.) in one rule.
+- [x] **IT light-mode tokens** — added `[data-dark="false"][data-theme="aws|azure|...|"]`
+  blocks that override `--theme-bg/card/text/muted/border` to light parchment values
+  while KEEPING segment accent + highlight (AWS orange, Azure blue, etc. still pop).
+  IT segments now respect light/dark mode preference like every other segment.
+- [x] **NaradInsights refactor** — dropped 60+ `segment === 'it'` branches in favour
+  of `useCyberpunk = isDark` (from PreferencesContext). The cyberpunk dark gradient
+  now applies in dark mode for ANY segment; light mode + ANY segment uses the
+  white-card style (which the wildcard CSS keeps from looking ghostly on dark too).
+  Also renamed ReadinessGauge prop `segment` → `dark: boolean`.
+
+PWA service worker:
+- [x] **CACHE_VERSION bumped** from `gyan-v1-2026-04-21` → `gyan-v2-2026-04-25`. This
+  was stale across multiple deploys (Wave 2 / 2.5 / 2.6). Without the bump the SW
+  fingerprint stays identical and browsers serve cached old shell — students who
+  installed the PWA before today were not seeing my fixes. Comment in sw.js now
+  flags this as required workflow.
+- [ ] **TODO Wave 9: automate CACHE_VERSION bump** — inject build hash via Next.js
+  build step so it auto-updates on every commit. Manual bump is error-prone. One
+  small script (or a git pre-commit hook on `public/sw.js`) closes this gap.
+
 ### Wave 2.6 — Sync audit fixes + matte panel + school sidebar (2026-04-25 night)
 Triggered by user QA round 2 — comprehensive audit of profile tabs, command
 palette, settings sync, and dark theme aesthetics.
