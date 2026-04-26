@@ -684,16 +684,41 @@ def page_coverage_map():
 
     coverage = fetch_coverage(_cache_key())
 
-    col_board, col_refresh = st.columns([3, 1])
-    with col_board:
-        board = st.radio(
-            "Board", list(CURRICULUM.keys()), horizontal=True,
+    # ── Wave 11 (2026-04-26): top-level scope selector ────────────────────────
+    # Previously the page jumped straight to school-board radio (WBBSE / WBCHSE
+    # / CBSE / ICSE) and the Global IT section sat scrolled below — Arka noted
+    # students couldn't find the IT coverage at a glance. Now we ask for scope
+    # first, then surface the right view inline.
+    col_scope, col_refresh = st.columns([3, 1])
+    with col_scope:
+        scope = st.radio(
+            "Scope",
+            ["📚 School Boards", "🌍 Global IT", "🏛️ Competitive (planned)"],
+            horizontal=True,
         )
     with col_refresh:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🔄 Refresh data"):
             st.cache_data.clear()
             st.rerun()
+
+    # Global IT scope → jump straight to the per-provider drill-down.
+    if scope == "🌍 Global IT":
+        _render_it_coverage(coverage)
+        return
+    # Competitive scope → coming soon (Wave 10 — Current Affairs system).
+    if scope.startswith("🏛️"):
+        st.info(
+            "Competitive exam coverage map is queued as Wave 10 (Current Affairs "
+            "system). For now use Command Centre's "
+            "domain-level numbers."
+        )
+        return
+
+    # ── School Boards scope (default) ─────────────────────────────────────────
+    board = st.radio(
+        "Board", list(CURRICULUM.keys()), horizontal=True,
+    )
 
     classes  = sorted(CURRICULUM[board].keys())
     # All subjects that appear in this board across any class
@@ -820,8 +845,16 @@ def page_coverage_map():
                         st.session_state["page"] = "🚀 Smart Pipeline"
                         st.rerun()
 
-    # ── 🌍 Global IT Certifications heatmap ───────────────────────────────────
+    # ── 🌍 Global IT Certifications heatmap (also rendered below for school
+    #    scope, so a curator scrolling can still see IT coverage) ─────────────
     st.markdown("---")
+    _render_it_coverage(coverage)
+
+
+def _render_it_coverage(coverage: dict) -> None:
+    """Per-provider drill-down for IT certifications.
+    Extracted as a helper so the top-level scope selector + the bottom-of-
+    school-page section both render the same content. Wave 11 (2026-04-26)."""
     st.subheader("🌍 Global IT Certifications — Domain Coverage")
     st.caption("Per-provider drill-down: red = 0 MCQs, green ≥ 10. Uses (provider, exam, topic) keys.")
 

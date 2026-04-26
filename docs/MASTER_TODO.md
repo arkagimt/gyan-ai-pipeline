@@ -169,6 +169,57 @@ dark cyberpunk untouched.
 - [ ] Fix `competitive/page.tsx:87` tab dark-mode regression
 - [ ] Sanity-check IT pages still render their own dark theme correctly
 
+### Wave 11 — Admin QA fixes (2026-04-26 evening)
+
+User QA round on Streamlit admin surfaced 4 issues. All addressed:
+
+1. **PDF upload "42P10" — ON CONFLICT mismatch** (Textbooks page)
+   `curriculum_sources` table missing UNIQUE constraint on
+   `(board,class_num,subject)` and `(board,class_num,subject,chapter)` that
+   the upsert calls in admin/streamlit_app.py:1450 require.
+   - [x] `scripts/fix_2026_04_26_admin_bugs.sql` adds two PARTIAL unique
+     indexes (one for chapter-NULL rows, one for chapter-present rows).
+     Postgres ON CONFLICT inference matches partial unique indexes (9.5+),
+     so both upsert shapes resolve correctly.
+
+2. **Vaidya health check "42703" — column does not exist**
+   `agents/vaidya.py:180` queries `ingestion_triage_queue.rejection_reason`
+   but the column was never added to the live schema. Same column is used
+   by chitragupta + schemas.TriageRow.
+   - [x] SQL adds `rejection_reason TEXT` (nullable) + a partial index
+     for the common `WHERE status='rejected' ORDER BY reviewed_at` query.
+
+3. **Coverage Map missing "Global IT" scope at top**
+   The page jumped to school-board radio (WBBSE/WBCHSE/CBSE/ICSE), with
+   Global IT section scrolled below. Curators couldn't find IT coverage
+   at a glance.
+   - [x] `admin/streamlit_app.py:page_coverage_map` now starts with a
+     scope selector (📚 School Boards / 🌍 Global IT / 🏛️ Competitive).
+     IT view jumps straight to the per-provider drill-down. Competitive
+     scope shows a "queued as Wave 10" placeholder.
+   - [x] Extracted IT rendering into `_render_it_coverage()` helper so the
+     top-of-page IT scope and the bottom-of-school-scope appendix share
+     the same code.
+
+4. **Global IT coverage showing 0 MCQs** despite 5 Microsoft seeds loaded
+   Two layers: (a) Streamlit Cloud hadn't redeployed since Wave 4 IT_TREE
+   alignment (still showing verbose names "AZ-900 Azure Fundamentals"),
+   (b) existing pyq_bank_v2 rows have per-batch topic from before Wave 4.5.
+   - [ ] **Manual: Streamlit Cloud auto-deploys from main branch within
+     ~5 min of push** — verify on next visit.
+   - [ ] **Manual: run** `python scripts/backfill_topic_per_mcq.py
+     --segment it --commit` once SUPABASE_URL + SERVICE_KEY are in env.
+     Updates 500 existing rows so Coverage Map shows 11/11 not 4/11.
+
+5. **GROQ_API_KEY missing in Vaidya output** — env config issue, not code.
+   - [ ] **Manual: add `GROQ_API_KEY` to Streamlit Cloud Secrets** so the
+     `groq` + `groq_guard` health checks pass on next run.
+
+6. **Defensive: DB-level CHECK constraint on metadata.exam slug shape**
+   - [x] SQL adds `CHECK (metadata->>'exam' ~ '^[a-z0-9]+(-[a-z0-9]+)*$')`
+     on pyq_bank_v2 + study_materials. Belt-and-braces against future
+     direct INSERTs bypassing the loader's lowercase-kebab guard.
+
 ### Wave 4.5 — Per-MCQ topic taxonomy in loader (2026-04-26)
 
 Closes the IT_TREE coverage gap noted as a known limitation in Wave 4.
