@@ -87,9 +87,14 @@ PWA service worker:
   fingerprint stays identical and browsers serve cached old shell — students who
   installed the PWA before today were not seeing my fixes. Comment in sw.js now
   flags this as required workflow.
-- [ ] **TODO Wave 9: automate CACHE_VERSION bump** — inject build hash via Next.js
-  build step so it auto-updates on every commit. Manual bump is error-prone. One
-  small script (or a git pre-commit hook on `public/sw.js`) closes this gap.
+- [x] **Wave 9: automate CACHE_VERSION bump (2026-04-26)** — shipped.
+  `gyan-ai-web/scripts/inject-sw-version.mjs` rewrites the CACHE_VERSION
+  line on every `next build` via package.json `prebuild` script.
+  Format: `gyan-<git-sha-7>-<YYYYMMDD>` (falls back to timestamp when git
+  isn't available). Idempotent — no write when already current. Manual
+  invocation: `npm run sw:version`. Vercel deploys auto-trigger via
+  `next build`. Eliminates the manual-bump-forgotten bug that bit Waves
+  2.5/2.6/2.7.
 
 ### Wave 2.6 — Sync audit fixes + matte panel + school sidebar (2026-04-25 night)
 Triggered by user QA round 2 — comprehensive audit of profile tabs, command
@@ -163,6 +168,31 @@ dark cyberpunk untouched.
 - [ ] Replace `bg-white/30`, `text-charcoal` hardcodes in school/competitive pages
 - [ ] Fix `competitive/page.tsx:87` tab dark-mode regression
 - [ ] Sanity-check IT pages still render their own dark theme correctly
+
+### Wave 4.5 — Per-MCQ topic taxonomy in loader (2026-04-26)
+
+Closes the IT_TREE coverage gap noted as a known limitation in Wave 4.
+
+Root cause: `db/supabase_loader.py:_build_pyq_entry` set `raw_data["topic"]`
+from `taxonomy.topic` (constant across an entire StudyPackage). With 25-MCQ
+batched packages, only 1 unique topic value persisted per batch — admin
+Streamlit's IT coverage map showed ~4/N distinct topics for a 100-MCQ exam.
+
+Fix:
+- [x] `db/supabase_loader.py` — `effective_topic = mcq.topic_tag if mcq.topic_tag else taxonomy.topic`
+  preserves backward-compat for legacy callers without topic_tag, but
+  every LLM-knowledge seed populates topic_tag (extracted in Wave 4 audit
+  for AZ-900: 11 distinct, AI-900: 11, DP-900: 11, AZ-104: 16, DP-600: 10).
+  All future seeds + DP-700 will get full topic distribution.
+- [x] `scripts/backfill_topic_per_mcq.py` — one-shot migration to fix the
+  5 already-loaded Microsoft seeds. Reads each row's `topic_tag` field
+  (untouched, per-MCQ from the seed JSON) and writes it back into
+  `question_payload.topic`. Idempotent + dry-run safe.
+  Usage: `python scripts/backfill_topic_per_mcq.py --segment it --commit`
+  (currently NOT auto-run — manual when Arka decides).
+
+After backfill is run, admin Coverage Map should show full 11/11 topics
+covered for AZ-900, etc., instead of ~4/11.
 
 ### Wave 4 — Streamlit polish (capped by framework)
 - [ ] `admin/.streamlit/config.toml` — brand colours (saffron primary, teal secondary)
@@ -265,6 +295,57 @@ syllabus. Build properly:
   for paid (Phase 22 monetisation)
 - [ ] Safety: every reply runs through Dharmarakshak / Llama-Guard 3
   before display (same pipeline that gates content)
+
+### Wave 10 — Current Affairs system for competitive exams (NEW, 2026-04-26)
+
+**Critical analysis (decision recorded):** CA is a major exam component for
+~85% of competitive recruitment exams. It is NOT a one-shot content
+generation — it requires recurring ingestion + decay + dedicated UI.
+
+**Exams that test CA (in scope):**
+  - UPSC family (~30% of GS-1)
+  - WBCS / WBPSC / state PSCs (~15-20%)
+  - SSC CGL/CHSL/MTS (~25% as "General Awareness")
+  - Banking (IBPS PO, SBI PO, RBI Grade B, NABARD, SEBI)
+  - Railway (RRB NTPC, ALP)
+  - Defence (NDA, CDS, AFCAT)
+  - WB Police, KP SI, Excise
+
+**Exams that DON'T need CA (out of scope):**
+  - JEE / NEET / GATE / CAT / XAT — pure technical/aptitude
+  - WB TET — pedagogy-focused
+  - CA / CS / CMA — finance-specific only (separate sub-feed if ever)
+
+**Scope estimate: 1-2 weeks focused work.** Components:
+1. Ingestion pipeline (`agents/sarbagya_ca.py` extension):
+   - Sources: PIB, The Hindu editorial digest, Indian Express explained,
+     RBI press, MEA briefings, ISRO, awards/sports, WB Government feed
+     (for WB-specific exams).
+   - Schedule: daily 06:00 IST via GitHub Actions cron.
+   - Output: dated CA cards + 3-5 derived MCQs per card.
+2. Schema additions:
+   - `current_affairs` content type in `pyq_bank_v2` or new table.
+   - `relevance_until` date column for decay model.
+   - `ca_theme` enum: international, polity, economy, science_tech,
+     environment, awards, sports, defence, wb_state.
+3. Audit gate (Vidushak adapt):
+   - CA sources are time-bound; bypass cross-source-coverage check but
+     enforce single-source-citation rule.
+4. UI:
+   - New `Current Affairs` tab in `ContentPanel.tsx` next to PYQ / Notes.
+   - Date-stamped feed, "this week" / "this month" / "year archive" filters.
+   - Per-card MCQ drill-down (uses existing InteractiveMCQ).
+   - Theme tag chips.
+5. Notifications:
+   - Reuse `/api/notifications`. New event type `current_affairs_digest`.
+   - "5 new CA questions for WBCS this week" / "RBI policy update — read".
+6. Decay model:
+   - Questions older than `relevance_until` hidden from default feed but
+     surface in "Browse archive" filter.
+
+**Today's scaffolding (Wave 5 byproduct):** Add a "Current Affairs"
+placeholder tab in the competitive nav so the slot is reserved and students
+see it's intentional. Implementation proper deferred to Wave 10.
 
 ### Wave 6 (post-sprint) — Polish from frontend-design audit
 - [ ] Display+body font pair for IT section (currently single `font-sans`)

@@ -97,6 +97,16 @@ def _build_pyq_entry(
     axes           = _taxonomy_axes(taxonomy)
     meta_forwarded = _forward_metadata(package_metadata)
 
+    # Wave 4.5 (2026-04-26): per-MCQ topic taxonomy.
+    # Previously raw_data["topic"] was set from `taxonomy.topic`, which is
+    # constant across every MCQ in a batched StudyPackage. With 25-MCQ batches
+    # this meant only 1 unique topic value persisted per batch — admin
+    # Streamlit's IT coverage map showed ~4/N distinct topics for a 100-MCQ
+    # exam (instead of all N). Now we prefer the MCQ's own topic_tag when set
+    # (which is true for every LLM-knowledge seed), falling back to
+    # taxonomy.topic for legacy callers that don't populate topic_tag.
+    effective_topic = mcq.topic_tag if mcq.topic_tag else taxonomy.topic
+
     raw_data = {
         "question":          mcq.question,
         "options":           mcq.options.model_dump(),
@@ -113,7 +123,7 @@ def _build_pyq_entry(
         "chapter":           taxonomy.chapter,
         "authority":         taxonomy.authority,
         "exam":              taxonomy.exam,
-        "topic":             taxonomy.topic,
+        "topic":             effective_topic,   # ← per-MCQ, not per-batch
         "provider":          taxonomy.provider,
         # Phase 1.3 classification axes (mirrored from top-level DB columns)
         **axes,
