@@ -90,6 +90,13 @@ EXAM_TAXONOMIES: dict[str, TaxonomySlice] = {
         topic    = "Microsoft Azure Administrator",
         count    = 1,
     ),
+    "dp-600": TaxonomySlice(
+        segment  = Segment.it,
+        provider = "Microsoft",
+        exam     = "DP-600",
+        topic    = "Implementing Analytics Solutions Using Microsoft Fabric",
+        count    = 1,
+    ),
     # Future:
     # "clf-c02": TaxonomySlice(segment=Segment.it, provider="AWS",
     #                          exam="CLF-C02",

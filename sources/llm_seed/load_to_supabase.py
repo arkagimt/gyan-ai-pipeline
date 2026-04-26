@@ -46,6 +46,7 @@ SOURCE_URLS: dict[str, str] = {
     "ai-900": "https://learn.microsoft.com/en-us/credentials/certifications/azure-ai-fundamentals/",
     "dp-900": "https://learn.microsoft.com/en-us/credentials/certifications/azure-data-fundamentals/",
     "az-104": "https://learn.microsoft.com/en-us/credentials/certifications/azure-administrator/",
+    "dp-600": "https://learn.microsoft.com/en-us/credentials/certifications/fabric-analytics-engineer-associate/",
 }
 
 

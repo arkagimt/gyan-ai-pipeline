@@ -1,0 +1,1913 @@
+{
+  "meta": {
+    "exam_code": "DP-600",
+    "exam_title": "Implementing Analytics Solutions Using Microsoft Fabric",
+    "provider": "Microsoft",
+    "source_type": "llm_knowledge",
+    "generator": "gemini-2.5-pro",
+    "syllabus_revision_date": "2024-03",
+    "generated_at": "2026-04-26T05:44:57Z",
+    "stats": {
+      "total_mcqs": 100,
+      "total_notes": 11,
+      "difficulty_split": {
+        "easy": 21,
+        "medium": 57,
+        "hard": 22
+      }
+    },
+    "pipeline_ingest": {
+      "exam": "dp-600",
+      "label": "Fabric Analytics Engineer Associate (DP-600)",
+      "provider": "Microsoft",
+      "segment": "it"
+    },
+    "audit_gate": {
+      "status": "passed",
+      "issues": 0,
+      "checked_at": "2026-04-26T05:44:57Z",
+      "last_audit_report": "audit-20260426T054607Z.json",
+      "last_audit_utc": "20260426T054607Z",
+      "issues_found": 0,
+      "unresolved": 0
+    },
+    "known_issues": []
+  },
+  "mcqs": [
+    {
+      "question": "You are designing a Microsoft Fabric architecture for an organization. You need a compute option that scales dynamically and can be manually or programmatically paused when no workloads are running to optimize resource consumption. Which of the following should you provision?",
+      "options": {
+        "A": "A Fabric capacity (F SKU)",
+        "B": "A Power BI Premium capacity (P SKU)",
+        "C": "An Azure Synapse dedicated SQL pool",
+        "D": "A Fabric trial capacity"
+      },
+      "correct": "A",
+      "reasoning_process": "Fabric capacities (F SKUs) provide the underlying compute for all Fabric workloads and uniquely support pausing and resuming to manage consumption. P SKUs (legacy) do not support pausing. Synapse dedicated SQL pools are not the native Fabric architecture (Fabric uses Warehouses). Trial capacities cannot be manually paused or used for production scaling.",
+      "explanation": "Fabric capacities (F SKUs) provide unified compute for all Fabric experiences and can be paused and resumed to manage usage.",
+      "difficulty": "easy",
+      "bloom_level": "understand",
+      "topic_tag": "Plan a data analytics environment",
+      "seq": 1
+    },
+    {
+      "question": "You implement a semantic model in a Fabric workspace. You apply Row-Level Security (RLS) using DAX to ensure sales managers only see data for their assigned regions. You need to grant the managers access to the workspace so they can view the reports connected to this model. Which workspace role must you assign to ensure RLS is strictly enforced?",
+      "options": {
+        "A": "Admin",
+        "B": "Member",
+        "C": "Contributor",
+        "D": "Viewer"
+      },
+      "correct": "D",
+      "reasoning_process": "In Microsoft Fabric and Power BI, users assigned the Admin, Member, or Contributor roles have workspace edit permissions and inherently bypass Row-Level Security (RLS) applied to semantic models in that workspace. To enforce RLS, users must be assigned the Viewer role (or be given Build/Read access via an App or item-level sharing).",
+      "explanation": "Row-Level Security (RLS) is only enforced for users who have the Viewer role in a workspace; higher privileges (Admin, Member, Contributor) bypass RLS.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Implement and manage a data analytics environment",
+      "seq": 2
+    },
+    {
+      "question": "Your team uses Microsoft Fabric to build an enterprise data solution. You connect your development workspace to Azure DevOps using Git integration. You need to implement a continuous integration and continuous deployment (CI/CD) process to move tested artifacts into a test workspace, and eventually to a production workspace. What is the recommended Microsoft Fabric-native approach to move the artifacts from the development workspace to the test workspace?",
+      "options": {
+        "A": "Connect the test workspace to the same Git branch as the development workspace and click sync.",
+        "B": "Use a Fabric deployment pipeline to assign the development workspace to the first stage and promote items to the test stage.",
+        "C": "Export the artifacts as a PBIP file from the development workspace and manually import them into the test workspace.",
+        "D": "Write a custom PowerShell script using the Power BI REST API to copy all OneLake files between the workspaces."
+      },
+      "correct": "B",
+      "reasoning_process": "While Git integration handles version control for the development environment, Fabric Deployment Pipelines are the native ALM mechanism for promoting content across different lifecycle environments (Dev -> Test -> Prod). Connecting multiple environments to the exact same Git branch can cause state conflicts and bypasses the deployment pipeline's ability to inject stage-specific parameters (like database connection rules).",
+      "explanation": "Git integration is used for source control in the development workspace, while Fabric deployment pipelines are used to promote content through testing and production stages.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Manage the analytics development lifecycle",
+      "seq": 3
+    },
+    {
+      "question": "You have built 15 reports and 3 semantic models in a Fabric workspace. You need to share 4 specific reports with 100 business users. The users should not have access to the other 11 reports or any underlying workspace artifacts. The 4 reports will be updated regularly. What is the most efficient and manageable way to distribute these reports?",
+      "options": {
+        "A": "Use the 'Share' button on each of the 4 reports to grant access to an Entra ID security group.",
+        "B": "Add the 100 users to the workspace as Viewers and hide the 11 reports they should not see.",
+        "C": "Publish a Power BI organizational app from the workspace containing only the 4 target reports.",
+        "D": "Move the 4 reports to a new workspace and add the users to that workspace as Contributors."
+      },
+      "correct": "C",
+      "reasoning_process": "A Power BI organizational App allows you to bundle specific content from a workspace and distribute it to large audiences. It provides a clean navigation experience and cleanly isolates viewers from the underlying workspace. Sharing 4 items individually is harder to maintain. Adding them as Viewers grants access to the whole workspace (hiding items does not enforce security). Making them Contributors would give them edit rights.",
+      "explanation": "Publishing an App is the best practice for distributing a curated subset of workspace content to a large audience of consumers.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Implement and manage a data analytics environment",
+      "seq": 4
+    },
+    {
+      "question": "You are using Fabric deployment pipelines to promote a Lakehouse and a Dataflow Gen2 from a Development workspace to a Test workspace. In the Test environment, the Dataflow Gen2 needs to read from an Azure SQL Database containing QA data, rather than the development database. How should you configure this?",
+      "options": {
+        "A": "Create a deployment rule in the deployment pipeline for the Test stage to replace the data source connection.",
+        "B": "Manually edit the Dataflow Gen2 in the Test workspace after the deployment completes.",
+        "C": "Use Git integration to create a separate 'Test' branch and merge the connection string changes.",
+        "D": "Define a workspace-level parameter in the Fabric admin portal for the Test workspace."
+      },
+      "correct": "A",
+      "reasoning_process": "Fabric deployment pipelines support 'deployment rules'. These rules allow you to automatically change configurations, such as data source connections or parameter values, when artifacts are promoted from one stage to another. Manual edits would be overwritten on the next deployment. Git branches manage code versions, not stage-specific configuration injection.",
+      "explanation": "Deployment rules allow you to automatically swap out data sources or parameter values when promoting content between pipeline stages.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Manage the analytics development lifecycle",
+      "seq": 5
+    },
+    {
+      "question": "You are planning a data architecture using Microsoft Fabric. Your organization has terabytes of historical telemetry data stored in an Azure Data Lake Storage (ADLS) Gen2 account. You want to query this data using a Fabric SQL analytics endpoint and join it with other OneLake data without moving or duplicating the historical data. What should you implement?",
+      "options": {
+        "A": "A Dataflow Gen2 to ingest the data into a Lakehouse.",
+        "B": "A Copy Data activity in a Data Pipeline to write to a Warehouse.",
+        "C": "An external table in a Fabric Warehouse.",
+        "D": "A OneLake shortcut pointing to the ADLS Gen2 account."
+      },
+      "correct": "D",
+      "reasoning_process": "OneLake shortcuts allow you to virtualize data residing in external data lakes (like ADLS Gen2, Amazon S3) into OneLake without physically copying the data. Once the shortcut is created in a Lakehouse, the data becomes immediately available to the SQL analytics endpoint and Spark notebooks.",
+      "explanation": "OneLake shortcuts enable zero-copy data virtualization, allowing you to seamlessly query external data lakes as if they were native Fabric data.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Plan a data analytics environment",
+      "seq": 6
+    },
+    {
+      "question": "You are configuring Git integration for a Microsoft Fabric workspace to enable source control for your notebooks and semantic models. Which of the following source control providers is natively supported by Microsoft Fabric for workspace Git integration?",
+      "options": {
+        "A": "GitLab",
+        "B": "Bitbucket",
+        "C": "Azure DevOps Repos",
+        "D": "AWS CodeCommit"
+      },
+      "correct": "C",
+      "reasoning_process": "Microsoft Fabric's native Git integration currently supports Azure DevOps Repos and GitHub. GitLab, Bitbucket, and AWS CodeCommit are not natively supported for direct workspace linking.",
+      "explanation": "Fabric workspace Git integration directly supports Azure DevOps Repos and GitHub for versioning and source control.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Manage the analytics development lifecycle",
+      "seq": 7
+    },
+    {
+      "question": "You manage a Fabric workspace for a data engineering team. A new engineer needs to be able to create, edit, and run Data Pipelines and Notebooks. However, security policy dictates they must not be allowed to add new users to the workspace or modify the workspace capacity settings. Which workspace role provides the minimum necessary permissions?",
+      "options": {
+        "A": "Viewer",
+        "B": "Contributor",
+        "C": "Member",
+        "D": "Admin"
+      },
+      "correct": "B",
+      "reasoning_process": "The Contributor role allows users to create, edit, and delete items in the workspace (like pipelines and notebooks). Members have those same rights but can also add users with Viewer or Contributor permissions. Admins can change workspace settings and assign all roles. Viewers can only read data.",
+      "explanation": "The Contributor workspace role allows users to author and manage artifacts but prevents them from managing user access or workspace settings.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Implement and manage a data analytics environment",
+      "seq": 8
+    },
+    {
+      "question": "Your organization is adopting Microsoft Fabric. The executive team requires access to 'Copilot in Fabric' to auto-generate report narratives and summarize semantic models. You must select an appropriate capacity SKU. What is the minimum compute requirement to enable Copilot in Fabric?",
+      "options": {
+        "A": "A Fabric trial capacity or an F8 capacity.",
+        "B": "A Fabric F64 capacity or higher.",
+        "C": "Any Fabric capacity, provided the users have Power BI Pro licenses.",
+        "D": "Power BI Premium Per User (PPU) licenses for the executive team."
+      },
+      "correct": "B",
+      "reasoning_process": "To access Copilot in Microsoft Fabric, the workspace must reside on a Fabric capacity of F64 or larger (or a legacy P1 capacity or larger). Smaller SKUs (F2-F32) do not support the Copilot functionality.",
+      "explanation": "Copilot in Microsoft Fabric requires a capacity of F64 or higher to handle the underlying AI workload.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Plan a data analytics environment",
+      "seq": 9
+    },
+    {
+      "question": "You have developed a core semantic model in Fabric that contains the master definitions for 'Gross Margin' and 'Active Customers'. You want to signal to all report creators in the organization that this model is the official, trusted source of truth. Which feature should you configure on the semantic model?",
+      "options": {
+        "A": "Object-Level Security (OLS)",
+        "B": "Endorsement (Certification)",
+        "C": "Sensitivity labels",
+        "D": "Data loss prevention (DLP) policies"
+      },
+      "correct": "B",
+      "reasoning_process": "Endorsement has two levels: Promoted and Certified. Certifying an artifact signals to the organization that it is the authoritative, trusted source of truth. OLS restricts access to specific columns/tables. Sensitivity labels classify data for security. DLP policies prevent sensitive data exfiltration.",
+      "explanation": "Endorsing an artifact (specifically using Certification) marks it as the authoritative and trusted source of truth for the organization.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Implement and manage a data analytics environment",
+      "seq": 10
+    },
+    {
+      "question": "Two data engineers are working in separate Fabric workspaces linked to the same Azure DevOps Git repository branch. Both engineers modify the same cell in a Spark Notebook and commit their changes. A merge conflict occurs. How must this merge conflict be resolved?",
+      "options": {
+        "A": "In the Fabric workspace using the native 'Resolve Conflict' UI dialog.",
+        "B": "In the source control repository (Azure DevOps) before syncing the workspace.",
+        "C": "By using a Fabric deployment pipeline to force-overwrite the branch.",
+        "D": "By deleting the notebook in the workspace and clicking 'Undo' in the Source control pane."
+      },
+      "correct": "B",
+      "reasoning_process": "Fabric does not currently have a native UI for resolving Git merge conflicts directly within the workspace interface. If a conflict occurs, developers must resolve it in the remote source control system (Azure DevOps or GitHub), commit the resolved version, and then pull/sync the updated state back into the Fabric workspace.",
+      "explanation": "Merge conflicts in Fabric Git integration cannot be resolved in the workspace UI; they must be resolved in the source control provider (e.g., Azure DevOps).",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Manage the analytics development lifecycle",
+      "seq": 11
+    },
+    {
+      "question": "You are planning a Microsoft Fabric solution that requires extracting data from an on-premises SQL Server database. Your organization's security policy strictly prohibits exposing the SQL Server to the public internet. Which component must you deploy to securely connect Fabric to the on-premises database?",
+      "options": {
+        "A": "An Azure ExpressRoute circuit directly terminating at OneLake.",
+        "B": "A OneLake shortcut using the server's internal IP address.",
+        "C": "An On-premises data gateway.",
+        "D": "A Fabric Workspace Identity."
+      },
+      "correct": "C",
+      "reasoning_process": "To connect cloud services (like Microsoft Fabric) to data sources situated behind a corporate firewall without opening public inbound ports, you must install and configure an On-premises data gateway. ExpressRoute can provide private routing to Azure, but the gateway software is still the required bridge mechanism for Fabric data connections to on-premises resources.",
+      "explanation": "An On-premises data gateway acts as a secure bridge to transfer data between on-premises networks and Microsoft cloud services.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Plan a data analytics environment",
+      "seq": 12
+    },
+    {
+      "question": "Your team is migrating a legacy data warehouse to Microsoft Fabric. The data engineering team primarily consists of SQL developers who have extensive experience writing stored procedures, multi-table transactions, and complex DML (Data Manipulation Language) statements. They are not familiar with Python or Spark. Which Fabric artifact is most appropriate as the primary analytical data store?",
+      "options": {
+        "A": "Fabric Lakehouse",
+        "B": "Fabric Warehouse",
+        "C": "KQL Database",
+        "D": "Power BI Dataflow Gen2"
+      },
+      "correct": "B",
+      "reasoning_process": "Fabric Warehouse fully supports full T-SQL DDL and DML (INSERT, UPDATE, DELETE) and multi-table transactions, making it ideal for SQL-centric teams. A Fabric Lakehouse allows SQL querying via the SQL analytics endpoint, but it is read-only; DML operations in a Lakehouse require Spark (PySpark, Spark SQL, etc.).",
+      "explanation": "Fabric Warehouse is designed for SQL-first teams and supports complex T-SQL DML and stored procedures, whereas a Lakehouse requires Spark for data modification.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Get data from data sources",
+      "seq": 13
+    },
+    {
+      "question": "An organization has 50 TB of historical IoT data stored in an Amazon S3 bucket. They need to join this data with current customer data stored in a Fabric Lakehouse to build a unified semantic model. Moving the 50 TB of data into OneLake would incur high egress costs and take considerable time. What is the most efficient architectural approach?",
+      "options": {
+        "A": "Use a Data Pipeline with a Copy Data activity to load the S3 data into a Lakehouse table.",
+        "B": "Create a Dataflow Gen2 to incrementally refresh the data from S3 into a Warehouse.",
+        "C": "Create an Amazon S3 shortcut in the Fabric Lakehouse to virtualize the data.",
+        "D": "Use an Azure Data Factory linked service to query the S3 bucket directly via DirectQuery."
+      },
+      "correct": "C",
+      "reasoning_process": "OneLake shortcuts allow you to virtualize external data (including ADLS Gen2, Amazon S3, and Dataverse) directly within a Fabric Lakehouse. This provides zero-copy data access, meaning the data can be queried via Spark or the SQL analytics endpoint immediately without incurring the time and cost of physical data movement.",
+      "explanation": "Shortcuts provide zero-copy virtualization, allowing external storage like Amazon S3 to be queried natively in Fabric without duplicating the data.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Get data from data sources",
+      "seq": 14
+    },
+    {
+      "question": "A business analyst needs to ingest data from an external REST API, clean the data by dropping several columns, pivot the results, and write the final dataset to a Fabric Lakehouse. The analyst is highly proficient in Power Query but does not know how to write Python or SQL code. Which tool is best suited for this transformation task?",
+      "options": {
+        "A": "Fabric Data Pipeline",
+        "B": "Spark Notebook",
+        "C": "Dataflow Gen2",
+        "D": "Fabric SQL analytics endpoint"
+      },
+      "correct": "C",
+      "reasoning_process": "Dataflow Gen2 uses the familiar Power Query (M) visual interface, making it the ideal choice for citizen developers and analysts who need to perform data transformations and write the output to a Fabric destination (like a Lakehouse) without writing code. Notebooks require Python/Scala/Spark SQL. Pipelines can orchestrate but aren't ideal for complex, row-level visual transformations.",
+      "explanation": "Dataflow Gen2 provides a low-code/no-code Power Query interface to transform data and load it into Fabric destinations, making it perfect for citizen developers.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Transform data",
+      "seq": 15
+    },
+    {
+      "question": "You are implementing a medallion architecture in a Fabric Lakehouse. You have just ingested raw JSON logs from a web application into OneLake without modifying their schema. In which layer of the medallion architecture does this data reside?",
+      "options": {
+        "A": "Bronze",
+        "B": "Silver",
+        "C": "Gold",
+        "D": "Platinum"
+      },
+      "correct": "A",
+      "reasoning_process": "In the medallion architecture, the Bronze layer (or raw layer) holds data in its original, unmodified format as extracted from the source systems. The Silver layer is for cleansed and conformed data, and the Gold layer holds business-level aggregates (usually in a star schema). Platinum is not a standard medallion layer.",
+      "explanation": "The Bronze layer of a medallion architecture is designed to store raw, unmodified data directly from the source.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Transform data",
+      "seq": 16
+    },
+    {
+      "question": "You are building a data transformation pipeline using a Fabric Spark Notebook. You need to read data from a CSV file located in the 'Files' section of your Lakehouse and write it as an optimized table in the 'Tables' section. Which format must you save the DataFrame as to ensure it is recognized as a managed table in the Fabric Lakehouse?",
+      "options": {
+        "A": "Parquet",
+        "B": "Delta",
+        "C": "CSV",
+        "D": "ORC"
+      },
+      "correct": "B",
+      "reasoning_process": "Microsoft Fabric Lakehouses natively rely on the Delta Lake format (which uses Parquet under the hood with a transaction log) for structured tables. Saving a DataFrame in 'delta' format in the managed Tables area automatically registers it as a Lakehouse table accessible via the SQL analytics endpoint.",
+      "explanation": "Fabric Lakehouse managed tables strictly use the Delta Lake format, which provides ACID transactions on top of Parquet files.",
+      "difficulty": "easy",
+      "bloom_level": "understand",
+      "topic_tag": "Transform data",
+      "seq": 17
+    },
+    {
+      "question": "You are designing a Fabric Pipeline to orchestrate an end-to-end ELT process. The pipeline needs to iterate over a list of 10 external database table names, dynamically passing each table name to a Copy activity to load into the Bronze layer. Which pipeline activity should you use to implement this iteration?",
+      "options": {
+        "A": "Switch activity",
+        "B": "ForEach activity",
+        "C": "Until activity",
+        "D": "Lookup activity"
+      },
+      "correct": "B",
+      "reasoning_process": "The ForEach activity in a Fabric Data Pipeline is used to iterate over a collection (like an array of table names). Inside the ForEach activity, you can place a Copy activity that dynamically uses the current item's value to parameterize the source query. The Lookup activity retrieves the list, but ForEach does the iteration.",
+      "explanation": "The ForEach activity is used to iterate over an array of items, allowing you to run dynamic, parameterized activities like the Copy activity for each item.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Get data from data sources",
+      "seq": 18
+    },
+    {
+      "question": "A data engineer has loaded 50 million rows of sales data into a Fabric Lakehouse table using a Spark notebook. A data analyst opens the SQL analytics endpoint for the Lakehouse and attempts to run an `UPDATE` statement to fix incorrect currency codes. What will be the result of this action?",
+      "options": {
+        "A": "The statement will succeed and update the underlying Delta table.",
+        "B": "The statement will fail because the SQL analytics endpoint is strictly read-only.",
+        "C": "The statement will succeed, but only if the analyst has the Admin workspace role.",
+        "D": "The statement will fail because the table requires V-Order optimization first."
+      },
+      "correct": "B",
+      "reasoning_process": "The SQL analytics endpoint provided by a Fabric Lakehouse is a read-only experience designed for querying data. It does not support DML operations like UPDATE, INSERT, or DELETE. All modifications to Lakehouse tables must be done using Spark or Dataflows.",
+      "explanation": "The Lakehouse SQL analytics endpoint provides read-only T-SQL access; modifying data in a Lakehouse requires using Apache Spark.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Transform data",
+      "seq": 19
+    },
+    {
+      "question": "You are configuring a Dataflow Gen2 to extract data from an on-premises SQL Server, perform heavy transformations using Power Query, and load it into a Fabric Warehouse. You notice the data extraction is extremely slow. Upon investigation, you realize the transformations are executing on the local on-premises data gateway rather than being pushed back to the SQL Server. Which Power Query concept is failing to occur?",
+      "options": {
+        "A": "V-Order optimization",
+        "B": "Query folding",
+        "C": "Data staging",
+        "D": "Predicate pushdown"
+      },
+      "correct": "B",
+      "reasoning_process": "Query folding is the mechanism in Power Query where the transformation steps (M code) are translated into a single native query (e.g., T-SQL) and executed by the source database engine. If query folding breaks (due to unsupported steps), the data gateway has to download all raw data and process it locally, causing massive performance degradation.",
+      "explanation": "Query folding allows Power Query transformations to be translated into native SQL and executed at the source database, significantly improving performance.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Transform data",
+      "seq": 20
+    },
+    {
+      "question": "You are transforming data in a Fabric Notebook using PySpark. You have two DataFrames: `df_sales` (1 billion rows) and `df_store_regions` (50 rows). You need to join these DataFrames. To maximize performance and avoid data shuffling across the Spark cluster, which optimization technique should you apply to the join?",
+      "options": {
+        "A": "Broadcast join",
+        "B": "Sort Merge join",
+        "C": "V-Order compilation",
+        "D": "Salting"
+      },
+      "correct": "A",
+      "reasoning_process": "In Spark, a broadcast join is the optimal strategy when joining a massive dataset with a very small dataset. It copies the small dataset (df_store_regions) to all worker nodes in the cluster, eliminating the need to shuffle the massive dataset (df_sales) across the network during the join operation.",
+      "explanation": "A broadcast join optimizes performance by sending a copy of a small table to all worker nodes, preventing costly network shuffling of the large table.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Transform data",
+      "seq": 21
+    },
+    {
+      "question": "You are building a semantic model using the default semantic model generated by a Fabric Lakehouse. You create a new Delta table in the Lakehouse using a Spark Notebook, but the table does not appear in the default semantic model when you open it in Power BI. How can you make the table available?",
+      "options": {
+        "A": "Drop and recreate the SQL analytics endpoint.",
+        "B": "Run a DAX `REFRESH` command on the model.",
+        "C": "Go to the Lakehouse SQL endpoint, click 'Manage default semantic model', and select the new table.",
+        "D": "Change the Delta table format to Parquet."
+      },
+      "correct": "C",
+      "reasoning_process": "The default semantic model in a Fabric Lakehouse does not automatically include newly created tables unless the 'Sync default semantic model' setting is universally enabled. Otherwise, developers must manually manage it by opening the 'Manage default semantic model' dialog in the SQL analytics endpoint and checking the box for the new table.",
+      "explanation": "Tables must often be explicitly added to the default semantic model via the 'Manage default semantic model' UI in the SQL endpoint.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Implement and manage semantic models",
+      "seq": 22
+    },
+    {
+      "question": "A data engineer is writing a PySpark script to update a 'Customer' dimension table in the Silver layer. The engineer needs to implement a Slowly Changing Dimension (SCD) Type 2 logic, where new records are inserted, and existing records are updated if their attributes change. Which Delta Lake command should the engineer use in Spark SQL?",
+      "options": {
+        "A": "APPEND",
+        "B": "UPSERT",
+        "C": "MERGE",
+        "D": "TRUNCATE"
+      },
+      "correct": "C",
+      "reasoning_process": "In Delta Lake (the underlying format for Fabric Lakehouses), the `MERGE` statement is used to perform conditional updates, inserts, and deletes in a single atomic transaction. It is the standard command used to implement SCD Type 1 and Type 2 patterns. 'UPSERT' is conceptually what happens, but 'MERGE' is the actual syntax.",
+      "explanation": "The Delta Lake MERGE command allows you to conditionally insert, update, or delete records, making it essential for Slowly Changing Dimension (SCD) patterns.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Transform data",
+      "seq": 23
+    },
+    {
+      "question": "You are designing the Gold layer of a medallion architecture in a Fabric Warehouse. To provide the best performance and simplified querying for Power BI semantic models via Direct Lake, how should the data be modeled in the Gold layer?",
+      "options": {
+        "A": "As a single, fully denormalized flat table.",
+        "B": "As a Star Schema with centralized fact tables and surrounding dimension tables.",
+        "C": "As a highly normalized 3rd Normal Form (3NF) model.",
+        "D": "As unstructured JSON documents."
+      },
+      "correct": "B",
+      "reasoning_process": "Power BI and Fabric semantic models (especially Direct Lake and Import modes) are heavily optimized for the Star Schema design (dimensional modeling). While flat tables work, they create massive redundancy and slow down certain calculations. 3NF causes too many joins and degrades read performance. JSON is unstructured and not suitable for a Gold serving layer.",
+      "explanation": "The Gold layer should be modeled as a Star Schema to maximize reporting performance and simplify DAX calculations in Power BI.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Transform data",
+      "seq": 24
+    },
+    {
+      "question": "You create a custom semantic model in Microsoft Fabric. You want to ensure the model uses Direct Lake mode to query data directly from OneLake without importing it into memory. Which condition must be met for Direct Lake mode to function properly?",
+      "options": {
+        "A": "The underlying tables must be in CSV format.",
+        "B": "The underlying tables must be Delta-formatted tables in a Lakehouse or Warehouse.",
+        "C": "The model must be published to a Power BI Pro workspace.",
+        "D": "Row-Level Security (RLS) must be applied at the Warehouse level."
+      },
+      "correct": "B",
+      "reasoning_process": "Direct Lake mode relies heavily on the memory-mapped file structures of Delta/Parquet files stored in OneLake. It natively reads Delta tables from a Lakehouse or Warehouse. It does not work with CSVs. It requires a Fabric Capacity (F SKU) or Premium capacity, not just a Pro workspace. If security like OLS/RLS is applied at the SQL endpoint, Direct Lake drops back to DirectQuery.",
+      "explanation": "Direct Lake mode requires the underlying data to be stored as Delta formatted tables in OneLake.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Implement and manage semantic models",
+      "seq": 25
+    },
+    {
+      "question": "Your Fabric Lakehouse contains a managed table named 'SalesData'. You have enabled V-Order optimization on your Spark session before writing data to this table. What is the primary benefit of enabling V-Order on Delta tables in Microsoft Fabric?",
+      "options": {
+        "A": "It automatically creates a backup of the table in a secondary Azure region.",
+        "B": "It enforces primary and foreign key constraints on the table.",
+        "C": "It optimizes the Parquet file structure to significantly accelerate read times for Power BI and SQL compute engines.",
+        "D": "It compresses the table using gzip to reduce OneLake storage costs."
+      },
+      "correct": "C",
+      "reasoning_process": "V-Order is a proprietary Microsoft optimization applied to Parquet files within Delta tables. It sorts and compresses data in a way that aligns with the VertiPaq engine's memory structures, providing massive read-performance improvements for Direct Lake semantic models and the SQL analytics endpoint.",
+      "explanation": "V-Order is a Fabric-specific write optimization that structures Delta Parquet files to maximize read performance across Power BI and SQL engines.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Transform data",
+      "seq": 26
+    },
+    {
+      "question": "You have a Dataflow Gen2 that extracts data from a cloud API and loads it into a Fabric Warehouse. You want to ensure that if the transformation fails midway, no partial data is loaded into the destination Warehouse, and the intermediate data can be inspected. Which Dataflow Gen2 feature handles intermediate storage during complex transformations?",
+      "options": {
+        "A": "Data Gateway",
+        "B": "Enable staging",
+        "C": "Query folding",
+        "D": "Fast copy"
+      },
+      "correct": "B",
+      "reasoning_process": "In Dataflow Gen2, enabling staging creates an intermediate storage layer (a lakehouse internal to the dataflow). This improves performance for complex transformations by materializing intermediate steps and helps prevent partial data loads to the final destination if a downstream transformation fails.",
+      "explanation": "Enabling staging in Dataflow Gen2 materializes data at intermediate steps, improving the reliability and performance of complex transformations.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Transform data",
+      "seq": 27
+    },
+    {
+      "question": "A data engineering team is using a Fabric Data Pipeline to move 100 GB of historical log files from Azure Blob Storage to a Fabric Lakehouse. No data transformation is required during the move. Which pipeline activity provides the highest throughput for this raw data ingestion?",
+      "options": {
+        "A": "Dataflow Gen2 activity",
+        "B": "Notebook activity",
+        "C": "Copy Data activity",
+        "D": "Stored Procedure activity"
+      },
+      "correct": "C",
+      "reasoning_process": "The Copy Data activity in Fabric Data Pipelines is highly optimized for bulk data movement across networks. When no transformations are required, it provides the fastest throughput and lowest compute overhead compared to spinning up a Spark cluster (Notebook) or running a Power Query mashup (Dataflow Gen2).",
+      "explanation": "The Copy Data activity is the most efficient and performant tool in Fabric for raw, bulk data ingestion without transformations.",
+      "difficulty": "easy",
+      "bloom_level": "understand",
+      "topic_tag": "Get data from data sources",
+      "seq": 28
+    },
+    {
+      "question": "You have created two Fabric Warehouses in the same workspace: `WH_Sales` and `WH_Inventory`. You need to create a view in `WH_Sales` that joins the `FactSales` table with the `DimProduct` table located in `WH_Inventory`. How should you reference the `DimProduct` table in your T-SQL query?",
+      "options": {
+        "A": "Using a linked server configuration.",
+        "B": "Using three-part naming: `WH_Inventory.dbo.DimProduct`.",
+        "C": "Using the OPENROWSET function.",
+        "D": "Using a OneLake shortcut within the SQL query."
+      },
+      "correct": "B",
+      "reasoning_process": "Fabric Warehouses support native cross-database queries using standard T-SQL three-part naming conventions (`database.schema.table`). As long as the warehouses are in the same workspace (or the user has appropriate permissions), you can query across them seamlessly without linked servers or external table setups.",
+      "explanation": "Fabric Warehouses natively support cross-database querying using standard T-SQL three-part naming conventions.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Get data from data sources",
+      "seq": 29
+    },
+    {
+      "question": "You are writing a Python notebook in Fabric. You have calculated a complex aggregate in a PySpark DataFrame named `df_summary`. You want to use standard T-SQL to query this specific DataFrame within the next cell of the same notebook. How can you accomplish this?",
+      "options": {
+        "A": "Use the `%%sql` magic command and reference the DataFrame directly by its Python variable name.",
+        "B": "Write the DataFrame to a Delta table, then use the `%%tsql` magic command.",
+        "C": "Register the DataFrame as a temporary view using `df_summary.createOrReplaceTempView('summary_view')`, then query it using the `%%sql` magic command.",
+        "D": "It is not possible to query a PySpark DataFrame with SQL without writing it to physical storage first."
+      },
+      "correct": "C",
+      "reasoning_process": "In Spark notebooks, you can transition between Python and Spark SQL. By registering a PySpark DataFrame as a temporary view (`createOrReplaceTempView`), you expose it to the Spark SQL catalog. You can then use the `%%sql` magic command in a new cell to run SQL queries against that view.",
+      "explanation": "To query a PySpark DataFrame using SQL in a notebook, you must first register it as a temporary view, which exposes it to the Spark SQL engine.",
+      "difficulty": "hard",
+      "bloom_level": "apply",
+      "topic_tag": "Transform data",
+      "seq": 30
+    },
+    {
+      "question": "Your Fabric architecture uses a custom semantic model in Direct Lake mode connected to a Lakehouse. You decide to implement Row-Level Security (RLS) by defining a security policy directly on the underlying tables in the Lakehouse SQL analytics endpoint. What will be the impact on the semantic model?",
+      "options": {
+        "A": "The semantic model will seamlessly apply the SQL-based RLS in Direct Lake mode.",
+        "B": "The semantic model will automatically convert the SQL RLS to DAX RLS.",
+        "C": "The semantic model will fall back to DirectQuery mode to enforce the SQL-based RLS.",
+        "D": "The semantic model will fail to refresh and throw an access error."
+      },
+      "correct": "C",
+      "reasoning_process": "Direct Lake mode bypasses the SQL endpoint and reads Delta files directly from OneLake. If security features like RLS or OLS are defined at the SQL endpoint level, Direct Lake cannot enforce them natively. Therefore, the engine automatically falls back to DirectQuery mode (querying the SQL endpoint) to ensure security is strictly enforced, which negatively impacts performance.",
+      "explanation": "Applying RLS at the Lakehouse SQL endpoint forces a Direct Lake semantic model to fall back to DirectQuery mode to ensure security enforcement.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Implement and manage semantic models",
+      "seq": 31
+    },
+    {
+      "question": "You are managing a Fabric workspace with multiple Lakehouses and Warehouses. You notice that every time you create a new Lakehouse, Fabric automatically generates an associated artifact that shares the same name as the Lakehouse. What is this artifact?",
+      "options": {
+        "A": "A default semantic model.",
+        "B": "A deployment pipeline.",
+        "C": "An empty Dataflow Gen2.",
+        "D": "A Power BI Paginated Report."
+      },
+      "correct": "A",
+      "reasoning_process": "When a Lakehouse or Warehouse is created in Microsoft Fabric, the system automatically provisions a SQL analytics endpoint and a default semantic model. This default model enables immediate reporting via Power BI without requiring the developer to build a model from scratch.",
+      "explanation": "Fabric automatically generates a default semantic model alongside every new Lakehouse or Warehouse to enable rapid Power BI reporting.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Implement and manage semantic models",
+      "seq": 32
+    },
+    {
+      "question": "You are building a Fabric Pipeline to orchestrate a data ingestion process. You need to verify if a specific file named 'incoming_data.csv' exists in an external Azure Data Lake Storage Gen2 account before attempting to process it. Which pipeline activity should you use?",
+      "options": {
+        "A": "Web activity",
+        "B": "Get Metadata activity",
+        "C": "Lookup activity",
+        "D": "Validation activity"
+      },
+      "correct": "B",
+      "reasoning_process": "The Get Metadata activity is used to retrieve metadata from a data source. You can configure it to check for the 'exists' property of a specific file or folder. Based on the output, subsequent activities (like an If Condition) can branch the pipeline logic.",
+      "explanation": "The Get Metadata activity is used to check for file existence, retrieve file sizes, or list child items in a storage location.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Get data from data sources",
+      "seq": 33
+    },
+    {
+      "question": "A data analyst is using Dataflow Gen2 to ingest a large dataset. They want to ensure that Dataflow Gen2 uses the 'Fast Copy' feature to improve ingestion speed. Which of the following is a requirement for Fast Copy to be utilized?",
+      "options": {
+        "A": "The source data must be located on an on-premises server.",
+        "B": "Staging must be disabled in the Dataflow Gen2 settings.",
+        "C": "The data source and destination must be explicitly supported by the Fast Copy feature.",
+        "D": "The user must have a Power BI Premium Per User (PPU) license."
+      },
+      "correct": "C",
+      "reasoning_process": "Fast Copy in Dataflow Gen2 bypasses the standard Power Query mashup engine for supported bulk data movements. It requires both the source (e.g., ADLS Gen2, Azure SQL) and destination (e.g., Lakehouse) to be supported connectors for Fast Copy. On-premises gateways generally do not support this in the same way, and staging is often bypassed.",
+      "explanation": "Fast Copy in Dataflow Gen2 provides high-speed bulk ingestion but only works if both the source and destination connectors support the feature.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Get data from data sources",
+      "seq": 34
+    },
+    {
+      "question": "You are processing streaming telemetry data in Microsoft Fabric. The data arrives continuously in real-time. You need a data store that is specifically optimized for high-volume, append-only, low-latency analytical queries on this streaming data. Which Fabric item should you provision?",
+      "options": {
+        "A": "Fabric Warehouse",
+        "B": "Fabric Lakehouse",
+        "C": "KQL Database",
+        "D": "Default Semantic Model"
+      },
+      "correct": "C",
+      "reasoning_process": "A KQL Database (part of Real-Time Intelligence in Fabric) is backed by the Kusto engine, which is highly optimized for fast, real-time ingestion and querying of append-only telemetry and log data. While a Lakehouse handles large data, it is built for batch/micro-batch processing using Spark/Delta.",
+      "explanation": "KQL Databases are designed specifically for high-speed ingestion and querying of real-time streaming and telemetry data.",
+      "difficulty": "easy",
+      "bloom_level": "understand",
+      "topic_tag": "Get data from data sources",
+      "seq": 35
+    },
+    {
+      "question": "You are writing a PySpark Notebook to clean customer data. You identify a dataframe `df_raw` containing a column named `Phone_Number` with many `null` values. You want to drop all rows where `Phone_Number` is `null` without affecting rows that have valid phone numbers. Which PySpark syntax accomplishes this?",
+      "options": {
+        "A": "df_raw.drop('Phone_Number')",
+        "B": "df_raw.dropna(subset=['Phone_Number'])",
+        "C": "df_raw.filter('Phone_Number == null')",
+        "D": "df_raw.replace('null', '')"
+      },
+      "correct": "B",
+      "reasoning_process": "In PySpark, `dropna(subset=['column_name'])` removes all rows where the specified column contains a null value. Option A drops the entire column. Option C is invalid syntax (should be `isNull()`). Option D replaces strings of 'null', not actual null objects.",
+      "explanation": "The PySpark method `dropna(subset=['Column'])` efficiently filters out rows that contain null values in a specific column.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Transform data",
+      "seq": 36
+    },
+    {
+      "question": "A team is designing a custom semantic model in Microsoft Fabric. They want to create a calculated table that summarizes daily sales into monthly totals. Which language must they use to define this calculated table within the semantic model?",
+      "options": {
+        "A": "T-SQL",
+        "B": "M (Power Query)",
+        "C": "DAX",
+        "D": "Python"
+      },
+      "correct": "C",
+      "reasoning_process": "In semantic models (both in Power BI and Fabric), calculated tables, calculated columns, and measures are created using Data Analysis Expressions (DAX). M is used in Power Query for data ingestion, and T-SQL/Python are used upstream in Warehouses/Lakehouses.",
+      "explanation": "DAX (Data Analysis Expressions) is the formula language used to create calculated tables, calculated columns, and measures inside semantic models.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Implement and manage semantic models",
+      "seq": 37
+    },
+    {
+      "question": "You have a Fabric Data Pipeline that orchestrates the loading of data into a Fabric Warehouse. You need to write a custom log entry to an audit table in the same Warehouse whenever a Copy Data activity successfully completes. Which pipeline activity should you place after the Copy Data activity?",
+      "options": {
+        "A": "Set Variable activity",
+        "B": "Stored Procedure activity",
+        "C": "Web activity",
+        "D": "Lookup activity"
+      },
+      "correct": "B",
+      "reasoning_process": "The Stored Procedure activity allows you to invoke a T-SQL stored procedure residing in your Fabric Warehouse. By connecting the 'On Success' path of the Copy Data activity to the Stored Procedure activity, you can pass pipeline run metadata (like pipeline name and run ID) to be logged in an audit table.",
+      "explanation": "The Stored Procedure activity is used to execute T-SQL logic, such as inserting audit logs, within a Fabric Warehouse from a Data Pipeline.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Get data from data sources",
+      "seq": 38
+    },
+    {
+      "question": "You are using a Spark Notebook to write a 500 GB PySpark DataFrame to a Delta table in the Silver layer of a Fabric Lakehouse. You want to ensure the data is physically distributed on disk by the 'Year' and 'Month' columns to optimize downstream queries that frequently filter by date. Which PySpark syntax should you use?",
+      "options": {
+        "A": "df.write.format('delta').bucketBy(10, 'Year', 'Month').saveAsTable('sales')",
+        "B": "df.write.format('delta').partitionBy('Year', 'Month').saveAsTable('sales')",
+        "C": "df.write.format('parquet').orderBy('Year', 'Month').saveAsTable('sales')",
+        "D": "df.write.format('delta').clusterBy('Year', 'Month').saveAsTable('sales')"
+      },
+      "correct": "B",
+      "reasoning_process": "In Delta Lake and Spark, `partitionBy` is used to physically divide the data on disk into directory structures based on column values (e.g., `Year=2024/Month=01`). This allows the compute engine to skip reading entire directories when queries filter by those columns (partition pruning). `bucketBy` is a different hashing technique, and `orderBy` just sorts data within files.",
+      "explanation": "The `partitionBy` method physically organizes Delta table files into folders based on column values, enabling efficient partition pruning for read operations.",
+      "difficulty": "hard",
+      "bloom_level": "apply",
+      "topic_tag": "Transform data",
+      "seq": 39
+    },
+    {
+      "question": "You are configuring a Dataflow Gen2 to load daily transactional data into a Fabric Lakehouse. You want to ensure that each daily run only adds new records to the destination table and does not overwrite the existing historical data. How must you configure the data destination settings?",
+      "options": {
+        "A": "Set the update method to 'Replace'.",
+        "B": "Set the update method to 'Append'.",
+        "C": "Enable the 'Require V-Order' toggle.",
+        "D": "Disable the 'Enable staging' option."
+      },
+      "correct": "B",
+      "reasoning_process": "When configuring a destination in Dataflow Gen2, you can choose between 'Append' and 'Replace'. 'Append' adds the new rows to the existing table, which is necessary for incremental daily loads of transactional data. 'Replace' drops and recreates the table, wiping out historical data.",
+      "explanation": "Setting the Dataflow Gen2 destination update method to 'Append' ensures new data is added without dropping existing historical records.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Transform data",
+      "seq": 40
+    },
+    {
+      "question": "A data engineer creates a Shortcut to an Azure Data Lake Storage Gen2 folder in the 'Files' section of a Fabric Lakehouse. The folder contains raw CSV files. The engineer wants to query this data using the Lakehouse SQL analytics endpoint. What must the engineer do first?",
+      "options": {
+        "A": "Use the T-SQL OPENROWSET function in the SQL analytics endpoint to query the CSV files.",
+        "B": "Create a semantic model that imports the CSV files into memory.",
+        "C": "Use a Spark Notebook or Dataflow Gen2 to read the CSV files and write them to the 'Tables' section as Delta tables.",
+        "D": "Change the shortcut protocol from ADLS to OneLake natively."
+      },
+      "correct": "C",
+      "reasoning_process": "The SQL analytics endpoint in a Fabric Lakehouse can only query managed Delta tables located in the 'Tables' section. It cannot directly query raw unstructured or semi-structured files (like CSVs) located in the 'Files' section. To query the CSV data with SQL, it must first be transformed and saved as a Delta table.",
+      "explanation": "The Lakehouse SQL analytics endpoint only surfaces tables stored in the Delta format within the 'Tables' section; it cannot query raw files in the 'Files' section.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Transform data",
+      "seq": 41
+    },
+    {
+      "question": "You create a T-SQL view within the SQL analytics endpoint of a Fabric Lakehouse to encapsulate complex join logic across multiple Delta tables. You build a custom semantic model and want to use Direct Lake mode to query this view. What will happen when the semantic model queries the view?",
+      "options": {
+        "A": "The model will query the view in Direct Lake mode with maximum performance.",
+        "B": "The model will automatically materialize the view in OneLake as a new Delta table.",
+        "C": "The model will fall back to DirectQuery mode to retrieve data from the view.",
+        "D": "The model refresh will fail because views are not supported in semantic models."
+      },
+      "correct": "C",
+      "reasoning_process": "Direct Lake mode works by directly memory-mapping underlying Delta/Parquet files from OneLake. Because a SQL view is a logical query and not a physical Delta file, Direct Lake cannot read it directly. It must fall back to DirectQuery mode and send a SQL query to the SQL analytics endpoint to evaluate the view.",
+      "explanation": "Direct Lake mode strictly reads physical Delta files; attempting to query a SQL view forces a fallback to the slower DirectQuery mode.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Implement and manage semantic models",
+      "seq": 42
+    },
+    {
+      "question": "You are orchestrating a complex ELT workflow using a Fabric Data Pipeline. If the pipeline encounters an error during the data load phase, you need to automatically send an email notification containing the error details to the engineering team. Which pipeline activity should you use to send the email?",
+      "options": {
+        "A": "Web activity",
+        "B": "Office 365 Outlook activity",
+        "C": "Set Variable activity",
+        "D": "Custom Spark activity"
+      },
+      "correct": "B",
+      "reasoning_process": "Fabric Data Pipelines include built-in integrations, including the Office 365 Outlook activity, which allows you to send emails directly from the pipeline. By connecting this activity to the 'On Failure' path of your data load activities, you can easily implement error alerting.",
+      "explanation": "The Office 365 Outlook pipeline activity natively enables sending automated email notifications upon pipeline success or failure.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Get data from data sources",
+      "seq": 43
+    },
+    {
+      "question": "A data engineering team uses PySpark in a Fabric Notebook to process stream-like micro-batches of data into a Lakehouse table. Over time, they notice the Delta table has accumulated thousands of tiny Parquet files, significantly degrading read performance. Which Spark SQL command should they run periodically to resolve this issue?",
+      "options": {
+        "A": "VACUUM",
+        "B": "OPTIMIZE",
+        "C": "ANALYZE TABLE",
+        "D": "MSCK REPAIR TABLE"
+      },
+      "correct": "B",
+      "reasoning_process": "The `OPTIMIZE` command in Delta Lake coalesces small files into larger, optimally sized files (bin-packing), which drastically reduces File I/O overhead and improves read performance. `VACUUM` removes old files no longer referenced by the transaction log but does not merge small active files.",
+      "explanation": "The OPTIMIZE command resolves 'small file problems' in Delta tables by consolidating numerous tiny files into larger, more efficient files.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Transform data",
+      "seq": 44
+    },
+    {
+      "question": "You are building a Fabric Pipeline that extracts data from a cloud REST API. The API uses pagination, returning a `next_page_token` in the JSON response body if more data exists. Which pipeline activity pattern is required to loop through all pages until all data is extracted?",
+      "options": {
+        "A": "A ForEach activity containing a Copy Data activity.",
+        "B": "An Until activity containing a Web activity and a Set Variable activity.",
+        "C": "A Switch activity to branch the logic based on the token.",
+        "D": "A Filter activity to remove empty pages."
+      },
+      "correct": "B",
+      "reasoning_process": "Because the total number of pages is unknown until execution, a `ForEach` activity (which requires a pre-defined array) cannot be used. An `Until` activity evaluates a condition (e.g., token is null) after each iteration. Inside the Until loop, a Web activity calls the API, and a Set Variable activity updates the token for the next iteration.",
+      "explanation": "An Until activity is required for pagination scenarios where the loop must continue executing based on a dynamic condition evaluated at runtime.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Get data from data sources",
+      "seq": 45
+    },
+    {
+      "question": "You are designing a semantic model in Fabric. You have a `FactSales` table and a `DimCustomer` table. A single customer can have multiple sales, but each sale belongs to exactly one customer. What cardinality and cross-filter direction should be configured for the relationship to ensure optimal performance and standard filtering?",
+      "options": {
+        "A": "Many-to-many (*:*) with Both cross-filter direction.",
+        "B": "One-to-one (1:1) with Single cross-filter direction.",
+        "C": "Many-to-one (*:1) from FactSales to DimCustomer with Single cross-filter direction.",
+        "D": "One-to-many (1:*) from FactSales to DimCustomer with Both cross-filter direction."
+      },
+      "correct": "C",
+      "reasoning_process": "In a standard Star Schema, the fact table sits on the 'many' side of the relationship, and the dimension table sits on the 'one' side. The default and best-practice cross-filter direction is 'Single' (from the 1 side to the * side). Therefore, Many-to-one from Fact to Dim with Single cross-filter is correct.",
+      "explanation": "The standard and most performant pattern for semantic models is a Many-to-one relationship from the fact table to the dimension table, using a Single cross-filter direction.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Implement and manage semantic models",
+      "seq": 46
+    },
+    {
+      "question": "You have a PySpark DataFrame named `df_customers`. You need to identify and remove exact duplicate rows across all columns before writing the cleaned data to the Silver layer. Which PySpark function achieves this most efficiently?",
+      "options": {
+        "A": "df_customers.distinct()",
+        "B": "df_customers.dropDuplicates()",
+        "C": "df_customers.filter('duplicate = False')",
+        "D": "Both A and B achieve exactly the same result."
+      },
+      "correct": "D",
+      "reasoning_process": "In PySpark, `distinct()` and `dropDuplicates()` (when called without arguments) both return a new DataFrame containing only the unique rows, evaluating across all columns. They are aliases for the same underlying Spark execution plan.",
+      "explanation": "In PySpark, distinct() and dropDuplicates() function identically when comparing entire rows to remove duplicates.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Transform data",
+      "seq": 47
+    },
+    {
+      "question": "You are configuring a custom semantic model in Fabric that will be used for enterprise reporting. You want to ensure that DAX time-intelligence functions (like YTD, MTD) work correctly and optimally. What must you do regarding the Date table in your model?",
+      "options": {
+        "A": "Ensure the Date table is a direct shortcut to an external SQL Server.",
+        "B": "Mark the table as a 'Date table' and specify the column that contains unique date values.",
+        "C": "Convert the Date table to DirectQuery mode.",
+        "D": "Apply Row-Level Security to the Date table."
+      },
+      "correct": "B",
+      "reasoning_process": "For built-in DAX time-intelligence functions (such as `TOTALYTD` or `SAMEPERIODLASTYEAR`) to work flawlessly, the model requires a dedicated date table marked explicitly as a 'Date table' in the semantic model settings, with a valid unique date column specified.",
+      "explanation": "Marking a table as a 'Date table' is a mandatory step in semantic modeling to ensure DAX time-intelligence functions calculate correctly.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Implement and manage semantic models",
+      "seq": 48
+    },
+    {
+      "question": "You are maintaining a Fabric Lakehouse. To comply with data privacy regulations (e.g., GDPR), you must permanently delete historical data files that are no longer referenced by the Delta transaction log and are older than 30 days. Which Delta Lake command should you execute?",
+      "options": {
+        "A": "OPTIMIZE",
+        "B": "DELETE",
+        "C": "VACUUM",
+        "D": "TRUNCATE"
+      },
+      "correct": "C",
+      "reasoning_process": "Delta Lake maintains a history of transactions (time travel). When you UPDATE or DELETE data, the old files are kept for a retention period. The `VACUUM` command permanently deletes these unreferenced physical files that are older than the specified retention threshold, freeing up storage and meeting compliance requirements.",
+      "explanation": "The VACUUM command removes historical, unreferenced Parquet files from a Delta table to free up storage and comply with data retention policies.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Transform data",
+      "seq": 49
+    },
+    {
+      "question": "You are designing a data model for a Fabric Warehouse. To simplify DAX measures and improve query performance for the downstream semantic model, you decide to combine multiple related lookup tables (e.g., 'ProductCategory', 'ProductSubcategory', 'Product') into a single, wide dimension table. Which dimensional modeling concept does this represent?",
+      "options": {
+        "A": "Normalization",
+        "B": "Denormalization",
+        "C": "Factless Fact Table",
+        "D": "Slowly Changing Dimension"
+      },
+      "correct": "B",
+      "reasoning_process": "Combining related lookup tables into a single dimension table flattens the hierarchy and reduces the number of joins required during a query. This is called denormalization (moving from a Snowflake schema to a Star schema) and is the recommended best practice for analytics models in Power BI and Fabric.",
+      "explanation": "Denormalizing dimension tables reduces relationship complexity, resulting in a cleaner Star Schema that optimizes Power BI query performance.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Transform data",
+      "seq": 50
+    },
+    {
+      "question": "You are using a Dataflow Gen2 to ingest a massive CSV file. The file has 200 columns, but your downstream Warehouse only requires 15 specific columns. To optimize the dataflow's performance and minimize memory usage during the Power Query mashup execution, what is the best practice?",
+      "options": {
+        "A": "Load all 200 columns into the Warehouse and drop them using a T-SQL view later.",
+        "B": "Apply a 'Remove Other Columns' step as the very first transformation step after connecting to the source.",
+        "C": "Disable query folding in the Dataflow settings.",
+        "D": "Use an unpivot transformation on the 185 unwanted columns."
+      },
+      "correct": "B",
+      "reasoning_process": "In Power Query, transforming data requires memory. Removing unnecessary columns as early as possible in the query steps reduces the dataset's width, significantly lowering memory consumption and processing time for all subsequent steps.",
+      "explanation": "Removing unnecessary columns early in a Dataflow Gen2 reduces the memory footprint and speeds up data processing.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Transform data",
+      "seq": 51
+    },
+    {
+      "question": "A data engineer is writing a PySpark script to join two large DataFrames. The script runs instantly in the Notebook cell, but when the engineer adds a `display(df_joined)` command in the next cell, it takes 15 minutes to execute. What Spark concept explains this behavior?",
+      "options": {
+        "A": "Predicate Pushdown",
+        "B": "Lazy Evaluation",
+        "C": "V-Order compilation",
+        "D": "Broadcast Hashing"
+      },
+      "correct": "B",
+      "reasoning_process": "Apache Spark uses lazy evaluation. Transformations (like `join`, `filter`, `select`) do not execute immediately; they merely build a logical execution plan. The actual computation is only triggered when an action (like `display`, `count`, `write`, `collect`) is called.",
+      "explanation": "Spark's lazy evaluation means that transformation code executes instantly by just building a plan, while physical processing only occurs when an action is triggered.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Transform data",
+      "seq": 52
+    },
+    {
+      "question": "You have configured a Fabric Data Pipeline. You want to pass the name of the source database table into the pipeline dynamically at runtime from an external trigger, rather than hardcoding it inside the Copy Data activity. Which pipeline feature should you use?",
+      "options": {
+        "A": "Pipeline Variable",
+        "B": "Pipeline Parameter",
+        "C": "Global Configuration",
+        "D": "Workspace Identity"
+      },
+      "correct": "B",
+      "reasoning_process": "Pipeline Parameters are used to pass external values into a pipeline at runtime (e.g., from a trigger or a calling pipeline). Pipeline Variables are used to store and alter values *during* the execution of the pipeline (using Set Variable activity).",
+      "explanation": "Pipeline Parameters allow you to dynamically inject values into a pipeline at runtime, making pipelines reusable for different sources.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Get data from data sources",
+      "seq": 53
+    },
+    {
+      "question": "You are developing a custom semantic model in Fabric. You need to create a DAX calculation that returns the total sales amount strictly for the previous calendar year, regardless of the current user's filter selections on the Date table. Which DAX function is essential to alter the filter context for this requirement?",
+      "options": {
+        "A": "SUMX",
+        "B": "CALCULATE",
+        "C": "FILTER",
+        "D": "RELATED"
+      },
+      "correct": "B",
+      "reasoning_process": "The `CALCULATE` function is the only DAX function capable of modifying, overriding, or adding to the existing filter context. To calculate previous year sales while ignoring user filters, `CALCULATE` must be used in conjunction with functions like `ALL('Date')` and `PREVIOUSYEAR`.",
+      "explanation": "The CALCULATE function is required in DAX whenever you need to modify or override the evaluation filter context of a measure.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Implement and manage semantic models",
+      "seq": 54
+    },
+    {
+      "question": "You are designing a semantic model in Microsoft Fabric. The underlying data resides in a Fabric Lakehouse as Delta tables and is updated every 5 minutes. The business requires report visuals to reflect the latest data instantly without requiring scheduled refreshes, while maintaining performance similar to Import mode. Which storage mode should you select for your tables?",
+      "options": {
+        "A": "DirectQuery",
+        "B": "Import",
+        "C": "Direct Lake",
+        "D": "Dual"
+      },
+      "correct": "C",
+      "reasoning_process": "Direct Lake mode reads Delta-formatted files directly from OneLake, providing the high performance of Import mode (via memory-mapping) along with the real-time freshness of DirectQuery, without duplicating data. DirectQuery would provide freshness but suffers from slower performance. Import requires scheduled refreshes.",
+      "explanation": "Direct Lake mode uniquely combines the high query performance of Import mode with the real-time data freshness of DirectQuery by reading Delta files natively.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Design and build semantic models",
+      "seq": 55
+    },
+    {
+      "question": "A financial semantic model contains a 'Payroll' table. You need to ensure that the 'EmployeeSalary' column is completely hidden and inaccessible to users who are not in the 'HR' security group. If a non-HR user attempts to author a report, they should not even see the column name in the field list. Which security feature must you implement?",
+      "options": {
+        "A": "Row-Level Security (RLS)",
+        "B": "Object-Level Security (OLS)",
+        "C": "Workspace Viewer role restrictions",
+        "D": "Data loss prevention (DLP) policies"
+      },
+      "correct": "B",
+      "reasoning_process": "Object-Level Security (OLS) restricts access to specific tables or columns, hiding their metadata entirely from unauthorized users. Row-Level Security (RLS) restricts access to rows of data, but the column names remain visible. Workspace roles apply to the entire model, not specific columns.",
+      "explanation": "Object-Level Security (OLS) is used to hide entire columns or tables (both data and metadata) from unauthorized users.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Design and build semantic models",
+      "seq": 56
+    },
+    {
+      "question": "You are optimizing an enterprise-scale semantic model. You have 20 base measures (e.g., Total Sales, Total Costs, Total Units). The business requires Year-to-Date (YTD), Quarter-to-Date (QTD), and Month-to-Date (MTD) variations for every base measure. What is the most efficient way to implement this without creating 60 individual new measures?",
+      "options": {
+        "A": "Use Field Parameters to group the DAX calculations.",
+        "B": "Create a Calculation Group with calculation items for YTD, QTD, and MTD.",
+        "C": "Write a Python script in a Fabric Notebook to generate the DAX measures automatically.",
+        "D": "Create calculated columns in the Date table to aggregate the values."
+      },
+      "correct": "B",
+      "reasoning_process": "Calculation Groups reduce measure proliferation by allowing you to define a set of DAX expressions (calculation items) that dynamically apply to any measure in the model using the `SELECTEDMEASURE()` function. Field parameters are for dynamically changing axis/values on visuals, not applying mathematical transformations. Calculated columns do not respond to report filter context dynamically.",
+      "explanation": "Calculation Groups prevent measure bloat by applying dynamic time-intelligence logic (like YTD) across any existing measure using SELECTEDMEASURE().",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Design and build semantic models",
+      "seq": 57
+    },
+    {
+      "question": "You define Object-Level Security (OLS) on the 'Margin' column of the 'Sales' table, restricting it from the 'SalesTeam' role. You have an existing Power BI report that contains a line chart displaying 'Margin by Month'. What happens when a user in the 'SalesTeam' role opens this report?",
+      "options": {
+        "A": "The line chart renders successfully but displays blank values for Margin.",
+        "B": "The line chart replaces the Margin values with zeros.",
+        "C": "The visual breaks and displays an error message stating that the column cannot be found.",
+        "D": "The report prompts the user to request elevated permissions."
+      },
+      "correct": "C",
+      "reasoning_process": "Because OLS hides the column metadata completely, the analytical engine treats the column as if it does not exist for the restricted user. Therefore, any visual, measure, or DAX query that explicitly references that column will fail and throw an error for that user.",
+      "explanation": "If a visual queries a column secured by Object-Level Security (OLS), the visual will break and display an error for unauthorized users.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Design and build semantic models",
+      "seq": 58
+    },
+    {
+      "question": "Your Direct Lake semantic model is experiencing slow performance. Upon reviewing the queries using DAX Studio, you notice that all DAX queries are executing as DirectQuery operations against the SQL analytics endpoint rather than reading the Delta files natively. Which of the following model configurations forces Direct Lake to fall back to DirectQuery?",
+      "options": {
+        "A": "Creating a relationship between two tables in the semantic model.",
+        "B": "Creating a DAX measure that uses the CALCULATE function.",
+        "C": "Including a table that relies on a SQL View defined in the Lakehouse.",
+        "D": "Hiding the primary key column of the Fact table."
+      },
+      "correct": "C",
+      "reasoning_process": "Direct Lake mode strictly requires physical Delta-formatted tables in OneLake. Because a SQL View is a logical construct that relies on the SQL engine to resolve, Direct Lake cannot read it natively. This forces the semantic model to fall back to DirectQuery to evaluate the view via the SQL analytics endpoint. DAX measures and relationships do not break Direct Lake.",
+      "explanation": "Direct Lake models fall back to DirectQuery when querying data sources that aren't physical Delta tables, such as SQL Views in a Lakehouse.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Optimize enterprise-scale semantic models",
+      "seq": 59
+    },
+    {
+      "question": "You are building a semantic model. You need to group customers into 'High', 'Medium', and 'Low' value tiers based on their historical lifetime revenue. You want users to be able to place this 'Tier' field on the X-axis of a bar chart to slice and filter data. Which DAX feature must you use?",
+      "options": {
+        "A": "A Calculated Column",
+        "B": "A Measure",
+        "C": "A Calculation Group",
+        "D": "Row-Level Security"
+      },
+      "correct": "A",
+      "reasoning_process": "To slice, group, or filter data (e.g., placing a field on a visual's axis or in a slicer), the field must be a physical column in the model. Calculated columns are evaluated row-by-row during processing and can be used as dimensions. Measures are evaluated dynamically in the filter context and can only be used in the 'Values' well of a visual.",
+      "explanation": "Calculated columns are required when you need to use the resulting values to slice, dice, filter, or group data on a visual axis.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Design and build semantic models",
+      "seq": 60
+    },
+    {
+      "question": "You are connecting a third-party optimization tool, Tabular Editor, to your Microsoft Fabric workspace to manage Calculation Groups and Perspectives in a semantic model. Which tenant-level feature must a Fabric administrator enable to allow Tabular Editor to deploy changes back to the workspace?",
+      "options": {
+        "A": "Allow users to create Fabric items",
+        "B": "XMLA Read/Write",
+        "C": "Publish to web",
+        "D": "Service principal API access"
+      },
+      "correct": "B",
+      "reasoning_process": "The XMLA (XML for Analysis) endpoint is the standard protocol for managing tabular models. To allow external tools like Tabular Editor, DAX Studio, or ALM Toolkit to modify and deploy changes to a Fabric semantic model, the XMLA endpoint must be configured for Read/Write access at the capacity/tenant level.",
+      "explanation": "External tools require the XMLA endpoint to be enabled for Read/Write in order to deploy metadata changes to Fabric semantic models.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Optimize enterprise-scale semantic models",
+      "seq": 61
+    },
+    {
+      "question": "You are designing a data model containing a 'Sales' fact table and a 'Date' dimension table. The 'Sales' table has two date columns: 'OrderDate' and 'ShipDate'. You need to create relationships so that users can view sales by Order Date or Ship Date. What is the recommended modeling approach?",
+      "options": {
+        "A": "Create two active relationships between the Date table and the Sales table.",
+        "B": "Create one active relationship for OrderDate, one inactive relationship for ShipDate, and use the DAX `USERELATIONSHIP` function in measures.",
+        "C": "Merge the Date table into the Sales table using Power Query to eliminate relationships entirely.",
+        "D": "Set the cross-filter direction to 'Both' on a single active relationship."
+      },
+      "correct": "B",
+      "reasoning_process": "A tabular model cannot have more than one active relationship between the same two tables. The standard pattern for 'role-playing dimensions' is to create one active relationship (usually the primary date, like OrderDate) and inactive relationships for the others. DAX measures then use `CALCULATE` and `USERELATIONSHIP` to temporarily activate the necessary relationship.",
+      "explanation": "Role-playing dimensions are handled by creating inactive relationships and activating them dynamically inside DAX measures using USERELATIONSHIP.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Design and build semantic models",
+      "seq": 62
+    },
+    {
+      "question": "You open a semantic model using DAX Studio and run the VertiPaq Analyzer. You notice that a single column, 'TransactionID', consumes 65% of the total memory in the semantic model. The column is a GUID string and is not used in any visuals or relationships, but the data engineering team uses it for pipeline auditing. How should you optimize the semantic model?",
+      "options": {
+        "A": "Change the storage mode of the table to Dual.",
+        "B": "Remove the 'TransactionID' column from the semantic model.",
+        "C": "Sort the table by the 'TransactionID' column in Power Query.",
+        "D": "Apply a dictionary encoding hint to the 'TransactionID' column using tabular object model (TOM)."
+      },
+      "correct": "B",
+      "reasoning_process": "The VertiPaq engine (Import mode) compresses data efficiently when cardinality (unique values) is low. High-cardinality columns like GUIDs compress very poorly and consume massive amounts of memory. If a column is strictly for backend auditing and serves no analytical purpose in reports, the best practice is to remove it from the semantic model entirely.",
+      "explanation": "Removing unused, high-cardinality columns (like GUIDs) is the most effective way to reduce the memory footprint of a VertiPaq semantic model.",
+      "difficulty": "medium",
+      "bloom_level": "analyze",
+      "topic_tag": "Optimize enterprise-scale semantic models",
+      "seq": 63
+    },
+    {
+      "question": "You are implementing Row-Level Security (RLS) dynamically. Your model contains a 'Security' table linking user email addresses to their assigned 'RegionID'. You need to write a DAX filter expression on the 'Region' table to enforce this. Which DAX function retrieves the email address of the currently logged-in user in the Power BI service?",
+      "options": {
+        "A": "USERNAME()",
+        "B": "USERPRINCIPALNAME()",
+        "C": "CUSTOMDATA()",
+        "D": "HASONEFILTER()"
+      },
+      "correct": "B",
+      "reasoning_process": "In the Power BI service and Microsoft Fabric, `USERPRINCIPALNAME()` returns the user's Entra ID email address (e.g., user@contoso.com), which is typically used for dynamic RLS joins. `USERNAME()` may return the domain/username format (DOMAIN\\user) in Power BI Desktop, making `USERPRINCIPALNAME()` the safer and standard choice for cloud deployments.",
+      "explanation": "The USERPRINCIPALNAME() DAX function returns the current user's email address, which is essential for implementing dynamic Row-Level Security (RLS).",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Design and build semantic models",
+      "seq": 64
+    },
+    {
+      "question": "A developer has authored a DAX measure that calculates total sales and applies an IF condition. The expression evaluates the `SUM(Sales[Amount])` multiple times within the same measure to check conditions and return different outputs. Query performance is slow. What DAX feature should be used to evaluate the sum only once and reuse the result?",
+      "options": {
+        "A": "ITERATOR functions (e.g., SUMX)",
+        "B": "CALCULATETABLE",
+        "C": "Variables (VAR / RETURN)",
+        "D": "KEEPFILTERS"
+      },
+      "correct": "C",
+      "reasoning_process": "Using variables (`VAR`) in DAX evaluates the expression exactly once at the location the variable is defined, and stores the result in memory. Reusing the variable name in the `RETURN` block prevents the engine from redundantly recalculating the expensive `SUM` operation, massively improving query execution time.",
+      "explanation": "DAX Variables (VAR) optimize performance by storing the result of an expression and preventing redundant calculations within a measure.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Optimize enterprise-scale semantic models",
+      "seq": 65
+    },
+    {
+      "question": "Your organization has a massive semantic model in Fabric. The file size exceeds 10 GB. When attempting to publish updates to the workspace, you receive a file size limit error. What setting must you configure in the Fabric workspace to support this model?",
+      "options": {
+        "A": "Enable the 'Large semantic model storage format' setting.",
+        "B": "Upgrade the workspace to a Premium Per User (PPU) capacity.",
+        "C": "Convert the semantic model to a streaming dataset.",
+        "D": "Enable 'Query caching' in the dataset settings."
+      },
+      "correct": "A",
+      "reasoning_process": "By default, Power BI/Fabric semantic models have a size limit for the physical `.pbix` file. To host datasets larger than 10 GB (and up to the capacity memory limit), you must enable the 'Large semantic model storage format' option in the workspace or dataset settings. This utilizes Azure Premium Files for storage behind the scenes.",
+      "explanation": "The 'Large semantic model storage format' must be enabled to allow models to grow beyond standard default size limits.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Optimize enterprise-scale semantic models",
+      "seq": 66
+    },
+    {
+      "question": "You are analyzing a poorly performing DAX query using DAX Studio. You want to see the exact storage engine queries (SQL or VertiPaq) generated by the Formula Engine and view the split between CPU time and Storage Engine time. Which DAX Studio trace feature should you turn on?",
+      "options": {
+        "A": "All Queries trace",
+        "B": "Server Timings trace",
+        "C": "Query Plan trace",
+        "D": "VertiPaq Analyzer"
+      },
+      "correct": "B",
+      "reasoning_process": "The 'Server Timings' trace in DAX Studio intercepts the events sent between the Formula Engine and the Storage Engine. It visually breaks down execution time (Formula Engine vs. Storage Engine), cache hits, and displays the underlying xmSQL/SQL physical queries generated.",
+      "explanation": "The Server Timings trace in DAX Studio is the primary tool used to diagnose execution bottlenecks between the Formula Engine and Storage Engine.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Optimize enterprise-scale semantic models",
+      "seq": 67
+    },
+    {
+      "question": "You are building a semantic model that includes a multi-billion row 'FactTelemetry' table in DirectQuery mode. Report performance is unacceptably slow. You create a smaller, aggregated table in Import mode that groups the telemetry by 'Date' and 'DeviceType'. How do you ensure Power BI uses this fast Import table when users view monthly summaries, while seamlessly falling back to DirectQuery only when they drill down to individual events?",
+      "options": {
+        "A": "Implement a Calculation Group.",
+        "B": "Configure User-Defined Aggregations and map the group-by columns.",
+        "C": "Use Field Parameters to dynamically swap the tables.",
+        "D": "Set the cross-filter direction on the relationship to 'Both'."
+      },
+      "correct": "B",
+      "reasoning_process": "User-Defined Aggregations allow you to map an aggregated Import table to a detailed DirectQuery table. When a user runs a DAX query that can be resolved at the aggregate grain (e.g., by Date and DeviceType), the engine automatically rewrites the query to hit the lightning-fast Import cache. If they drill deeper, it seamlessly sends a DirectQuery to the source.",
+      "explanation": "User-Defined Aggregations seamlessly route high-level queries to a fast Import cache while allowing detailed drill-downs to fall back to DirectQuery.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Optimize enterprise-scale semantic models",
+      "seq": 68
+    },
+    {
+      "question": "You are configuring a composite model with Aggregations. You have an Import mode Aggregation table and a DirectQuery mode Fact table. Both tables share the same 'DimDate' dimension table. To optimize performance and avoid weak relationships, what storage mode must the 'DimDate' table be set to?",
+      "options": {
+        "A": "Import",
+        "B": "DirectQuery",
+        "C": "Dual",
+        "D": "Direct Lake"
+      },
+      "correct": "C",
+      "reasoning_process": "In an aggregation setup, the dimension tables shared by both the Import aggregate table and the DirectQuery fact table must be set to 'Dual' mode. This allows the dimension table to act as an Import table when querying the aggregate cache, and as a DirectQuery table when passing SQL joins to the detailed fact table, preventing costly cross-island joins.",
+      "explanation": "Dimension tables shared across Import and DirectQuery fact tables should be set to Dual storage mode to prevent inefficient cross-island queries.",
+      "difficulty": "hard",
+      "bloom_level": "apply",
+      "topic_tag": "Optimize enterprise-scale semantic models",
+      "seq": 69
+    },
+    {
+      "question": "You are optimizing a Fabric semantic model globally. In Power BI Desktop / Fabric workspace settings, you disable the 'Auto date/time' feature. What is the immediate impact of this action on the semantic model?",
+      "options": {
+        "A": "All DAX time-intelligence functions will permanently stop working.",
+        "B": "The VertiPaq engine automatically deletes hidden system date tables, reducing model size.",
+        "C": "The model will convert all DateTime columns to Integer data types.",
+        "D": "The cross-filter direction of all relationships will reset to Single."
+      },
+      "correct": "B",
+      "reasoning_process": "When 'Auto date/time' is enabled, the engine automatically creates a hidden Date table in memory for every single date or datetime column in the entire model. This drastically bloats the file size. Disabling it deletes these hidden tables, recovering memory. Time intelligence functions still work if you explicitly define and mark a custom Date table.",
+      "explanation": "Disabling 'Auto date/time' removes hidden auto-generated date tables, which is a critical best practice for reducing model size and memory bloat.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Optimize enterprise-scale semantic models",
+      "seq": 70
+    },
+    {
+      "question": "You have a semantic model in Import mode. The dataset is growing rapidly, and the nightly refresh takes too long. The business needs the last 5 years of data, but data only ever changes for the most recent 3 days. What feature should you implement to speed up the refresh process?",
+      "options": {
+        "A": "Direct Lake mode",
+        "B": "Query caching",
+        "C": "Incremental Refresh",
+        "D": "Deployment Pipelines"
+      },
+      "correct": "C",
+      "reasoning_process": "Incremental Refresh automatically partitions a table based on Date/Time parameters (`RangeStart` and `RangeEnd`). It allows you to define a retention policy (e.g., keep 5 years) and a refresh policy (e.g., refresh only the last 3 days). This dramatically reduces the amount of data processed during scheduled refreshes.",
+      "explanation": "Incremental Refresh policies partition tables to only refresh recently changed data, drastically reducing processing time for large historical datasets.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Optimize enterprise-scale semantic models",
+      "seq": 71
+    },
+    {
+      "question": "A data analyst needs to create a visual where the end-user can use a slicer to toggle the visual's Y-axis between 'Total Sales', 'Total Costs', and 'Total Margin'. Which semantic modeling feature natively supports this requirement without writing complex IF/SWITCH DAX statements?",
+      "options": {
+        "A": "Calculation Groups",
+        "B": "Field Parameters",
+        "C": "Bookmarks",
+        "D": "Numeric Range Parameters"
+      },
+      "correct": "B",
+      "reasoning_process": "Field Parameters allow users to dynamically change the measures or dimensions analyzed within a visual. By creating a Field Parameter containing 'Total Sales', 'Total Costs', and 'Total Margin', the user gets a slicer that natively updates the visual's axis mapping.",
+      "explanation": "Field Parameters natively allow report consumers to dynamically swap the measures or dimensions displayed on a visual without complex DAX.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Design and build semantic models",
+      "seq": 72
+    },
+    {
+      "question": "You are analyzing DAX measures using Tabular Editor's Best Practice Analyzer (BPA). The BPA flags a specific relationship between 'FactSales' and 'DimCustomer' as violating a best practice because the relationship's Cross-Filter Direction is set to 'Both' instead of 'Single'. Why is bi-directional filtering generally discouraged in Star Schemas?",
+      "options": {
+        "A": "It prevents the model from using Direct Lake mode.",
+        "B": "It introduces ambiguity into the data model and can cause unpredictable filter propagation.",
+        "C": "It disables the ability to use Row-Level Security (RLS) on the dimension.",
+        "D": "It forces all measures to return blank values if any row contains a null."
+      },
+      "correct": "B",
+      "reasoning_process": "Bi-directional cross-filtering (Both) allows filters to flow from the 'many' side back up to the 'one' side. In a complex model with multiple fact tables (Snowflake/Constellation), this can create multiple filtering paths between tables, leading to ambiguity, slow performance, and mathematically incorrect DAX results.",
+      "explanation": "Bi-directional cross-filtering can create ambiguous filter paths and performance degradation, so 'Single' direction is recommended for standard Star Schemas.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Design and build semantic models",
+      "seq": 73
+    },
+    {
+      "question": "You need to join a 'Budget' table recorded at the Monthly grain (e.g., YYYY-MM) with a 'Sales' fact table recorded at the Daily grain. They cannot be physically related via a standard relationship due to mismatched granularity. Which DAX function can you use inside a measure to virtually apply the 'Date' table filters to the 'Budget' table?",
+      "options": {
+        "A": "TREATAS",
+        "B": "CROSSFILTER",
+        "C": "RELATEDTABLE",
+        "D": "USERELATIONSHIP"
+      },
+      "correct": "A",
+      "reasoning_process": "The `TREATAS` function applies the result of a table expression as filters to columns from an unrelated table. It is the standard DAX pattern for handling different granularities (like Monthly Budget vs Daily Sales) where physical relationships aren't possible, by mapping the filtered Date values 'as if' they belonged to the Budget table.",
+      "explanation": "TREATAS is used to create virtual relationships in DAX, allowing you to pass filter context across tables that do not have a physical relationship.",
+      "difficulty": "hard",
+      "bloom_level": "apply",
+      "topic_tag": "Design and build semantic models",
+      "seq": 74
+    },
+    {
+      "question": "You are developing Calculation Groups in Tabular Editor. One calculation item returns a raw dollar amount, while another calculation item returns a percentage (e.g., Year-over-Year Growth). When users swap between these items, the visual formatting must change accordingly. What Calculation Group feature must you configure?",
+      "options": {
+        "A": "Format String Expression",
+        "B": "Dynamic M Query Parameters",
+        "C": "Object-Level Security",
+        "D": "Precedence property"
+      },
+      "correct": "A",
+      "reasoning_process": "Calculation items support a 'Format String Expression' property. This allows you to dynamically alter the formatting of the underlying measure based on the calculation item selected. For example, returning `\"0.00%\"` for a growth item and `\"$#,##0.00\"` for a baseline item.",
+      "explanation": "Format String Expressions in Calculation Groups allow the number formatting to change dynamically based on the calculation item selected by the user.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Design and build semantic models",
+      "seq": 75
+    },
+    {
+      "question": "You want to implement a custom DAX logic that calculates a rolling 30-day average. You need to ensure the calculation only considers dates that exist in the physical 'Sales' fact table, avoiding calculations on future dates in the 'Date' dimension. Which DAX time-intelligence approach provides this control?",
+      "options": {
+        "A": "Using the DATESINPERIOD function.",
+        "B": "Using the SAMEPERIODLASTYEAR function.",
+        "C": "Using the PARALLELPERIOD function.",
+        "D": "Enabling 'Auto date/time' in settings."
+      },
+      "correct": "A",
+      "reasoning_process": "The `DATESINPERIOD` function shifts a given set of dates by a specified interval (e.g., -30 days). When combined with `CALCULATE`, it is the standard function used for rolling averages. SAMEPERIODLASTYEAR and PARALLELPERIOD move by static blocks (years, quarters) rather than a rolling dynamic window of days.",
+      "explanation": "DATESINPERIOD is the optimal DAX time-intelligence function for creating rolling windows, such as a 30-day moving average.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Design and build semantic models",
+      "seq": 76
+    },
+    {
+      "question": "You are managing a Direct Lake semantic model in Microsoft Fabric. You notice that the memory usage of the capacity spikes significantly when the dataset is queried. Which of the following actions will help optimize the memory footprint of a Direct Lake model?",
+      "options": {
+        "A": "Enabling V-Order on the underlying Delta tables in OneLake.",
+        "B": "Converting the model to use DirectQuery instead.",
+        "C": "Applying Row-Level Security via DAX.",
+        "D": "Creating complex DAX calculated columns within the semantic model."
+      },
+      "correct": "A",
+      "reasoning_process": "V-Order is a proprietary optimization applied to Parquet files. When V-Order is enabled on Delta tables in OneLake, the Direct Lake engine can load only the necessary compressed dictionary dictionaries into memory and process queries much faster and with a significantly smaller memory footprint. Calculated columns actually increase memory use, and DirectQuery bypassing the cache hurts speed.",
+      "explanation": "Enabling V-Order optimization on the underlying Delta files minimizes the memory footprint and maximizes read performance for Direct Lake semantic models.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Optimize enterprise-scale semantic models",
+      "seq": 77
+    },
+    {
+      "question": "A data analyst needs to perform ad-hoc exploratory analysis on a massive Delta table located in a Fabric Lakehouse. The analyst is highly proficient in T-SQL, including complex window functions and Common Table Expressions (CTEs), but does not know Python or Spark. They only need to read the data, not modify it. Which tool should they use?",
+      "options": {
+        "A": "Fabric Dataflow Gen2",
+        "B": "Lakehouse SQL analytics endpoint",
+        "C": "Spark Notebook using PySpark",
+        "D": "KQL Database"
+      },
+      "correct": "B",
+      "reasoning_process": "The SQL analytics endpoint in a Fabric Lakehouse provides a familiar, full T-SQL querying experience (including window functions, CTEs, and joins) over Delta tables. It is designed exactly for this scenario: read-only ad-hoc exploration by SQL-proficient users without requiring Spark compute.",
+      "explanation": "The Lakehouse SQL analytics endpoint allows analysts to use standard T-SQL to query and explore Delta tables without writing Spark code.",
+      "difficulty": "easy",
+      "bloom_level": "understand",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 78
+    },
+    {
+      "question": "You are designing an architecture for a logistics company. The system must ingest 500,000 GPS telemetry events per second from delivery trucks. You need to write analytical queries that aggregate this streaming data with sub-second latency to feed a live dashboard. Which Microsoft Fabric item is optimized for this workload?",
+      "options": {
+        "A": "Fabric Lakehouse",
+        "B": "Fabric Warehouse",
+        "C": "KQL Database (Eventhouse)",
+        "D": "Power BI Datamart"
+      },
+      "correct": "C",
+      "reasoning_process": "KQL Databases (hosted within Eventhouses in Fabric) are backed by the Kusto Data Explorer engine. They are explicitly designed for high-throughput, low-latency ingestion and querying of streaming, append-only telemetry and log data. Lakehouses/Warehouses are optimized for batch processing and would struggle with sub-second streaming latency.",
+      "explanation": "KQL Databases (Eventhouses) are purpose-built for real-time analytics, handling massive volumes of streaming telemetry with near-zero latency.",
+      "difficulty": "medium",
+      "bloom_level": "analyze",
+      "topic_tag": "Use Microsoft Fabric to expand data analytics capabilities",
+      "seq": 79
+    },
+    {
+      "question": "A data scientist is exploring a new dataset in a Fabric Spark Notebook. They want to instantly view column statistics (like missing values, min/max, and distribution histograms) and automatically generate PySpark code to drop nulls, all via a visual interface. Which built-in Fabric feature should they launch?",
+      "options": {
+        "A": "Data Wrangler",
+        "B": "Copilot for Data Factory",
+        "C": "SQL analytics endpoint",
+        "D": "Tabular Editor"
+      },
+      "correct": "A",
+      "reasoning_process": "Data Wrangler is a tool integrated directly into Fabric Notebooks. It allows users to visually profile pandas or PySpark DataFrames, view summary statistics, point-and-click to apply transformations, and then automatically generates the underlying PySpark/Python code back into the notebook cell.",
+      "explanation": "Data Wrangler provides a visual interface within Fabric Notebooks for exploratory data analysis (EDA) and automatic PySpark code generation.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 80
+    },
+    {
+      "question": "You have a KQL Database containing real-time server logs. You want to expose this data to a custom Power BI semantic model using Direct Lake mode so it can be joined with HR data stored in a Lakehouse. What configuration must you enable on the KQL Database to support Direct Lake mode?",
+      "options": {
+        "A": "Convert the KQL Database to a SQL Warehouse.",
+        "B": "Enable the 'OneLake availability' setting.",
+        "C": "Create an Eventstream pipeline to copy the data to a Dataflow Gen2.",
+        "D": "Change the Power BI workspace license to Premium Per User (PPU)."
+      },
+      "correct": "B",
+      "reasoning_process": "Direct Lake mode relies entirely on reading physical Delta files stored in OneLake. By default, KQL databases use a proprietary format optimized for streaming. Enabling 'OneLake availability' on a KQL Database continuously mirrors the KQL data into OneLake as Delta-formatted files, allowing Direct Lake semantic models to query it natively.",
+      "explanation": "Enabling 'OneLake availability' on a KQL Database mirrors its data to OneLake in Delta format, making it accessible to Direct Lake semantic models.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Use Microsoft Fabric to expand data analytics capabilities",
+      "seq": 81
+    },
+    {
+      "question": "You are querying data in the SQL analytics endpoint of a Fabric Lakehouse. You write a query utilizing the `CREATE VIEW` statement to encapsulate a complex join between `FactSales` and `DimCustomer`. Where is the metadata for this view stored, and how does it affect the underlying Delta tables?",
+      "options": {
+        "A": "It is stored in the Lakehouse metastore and converts the underlying Delta tables to Parquet.",
+        "B": "It is stored in the SQL analytics endpoint and does not move or duplicate any underlying data.",
+        "C": "It is stored in OneLake as a new physical Delta table.",
+        "D": "It creates a temporary table in memory that is destroyed when the session ends."
+      },
+      "correct": "B",
+      "reasoning_process": "Views created in the SQL analytics endpoint or Warehouse are purely logical constructs. The metadata (the T-SQL definition of the view) is stored in the SQL engine's catalog. Querying the view executes the logical query against the original Delta tables without copying, moving, or altering the physical data.",
+      "explanation": "A SQL View is a logical metadata layer stored in the SQL endpoint that does not duplicate or alter the underlying OneLake data.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 82
+    },
+    {
+      "question": "You are using a Fabric Spark Notebook configured with the default PySpark kernel. In cell 1, you define a PySpark DataFrame. In cell 2, you want to write a standard T-SQL `SELECT` query against a managed Delta table in the same Lakehouse. Which magic command must you place at the top of cell 2?",
+      "options": {
+        "A": "%%pyspark",
+        "B": "%%sql",
+        "C": "%%kql",
+        "D": "%%tsql"
+      },
+      "correct": "B",
+      "reasoning_process": "In Fabric Notebooks, you can switch languages on a per-cell basis using magic commands. To execute Spark SQL (which supports standard SQL syntax for querying Delta tables) in a notebook defaulting to PySpark, you use the `%%sql` magic command at the start of the cell.",
+      "explanation": "The `%%sql` magic command allows you to seamlessly execute Spark SQL queries within a PySpark-default notebook.",
+      "difficulty": "easy",
+      "bloom_level": "apply",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 83
+    },
+    {
+      "question": "Your company uses Microsoft Fabric. The marketing team requires an automated process to monitor an 'Inventory' semantic model. If the 'Stock Level' measure drops below 50 units for any product, an automated Teams message and an email should be sent to the supply chain manager within 5 minutes. Which Fabric workload is designed to handle this event-driven alerting?",
+      "options": {
+        "A": "Data Activator",
+        "B": "Dataflow Gen2",
+        "C": "Fabric Deployment Pipelines",
+        "D": "Spark Structured Streaming"
+      },
+      "correct": "A",
+      "reasoning_process": "Data Activator is the native no-code/low-code alerting and action system in Microsoft Fabric. It continuously monitors data in Power BI semantic models or Eventstreams and triggers automated actions (like Teams messages, emails, or Power Automate flows) when specific data conditions or thresholds are met.",
+      "explanation": "Data Activator monitors data in real-time and triggers automated actions or alerts when specific thresholds are breached.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Use Microsoft Fabric to expand data analytics capabilities",
+      "seq": 84
+    },
+    {
+      "question": "An analyst is transitioning from T-SQL to Kusto Query Language (KQL) to explore log data in an Eventhouse. They want to return only the first 50 rows of the `SystemLogs` table to understand the schema. Which KQL operator is equivalent to the T-SQL `TOP 50` or `LIMIT 50` clause?",
+      "options": {
+        "A": "SystemLogs | limit 50",
+        "B": "SystemLogs | take 50",
+        "C": "SystemLogs | top 50 by Timestamp",
+        "D": "All of the above are valid KQL syntax for this purpose."
+      },
+      "correct": "D",
+      "reasoning_process": "In KQL, `take 50` and `limit 50` are synonymous and return a random selection of 50 rows. If sorting is required (which is usually the case when using TOP in SQL), `top 50 by [Column]` is the correct semantic equivalent. All three commands are syntactically valid KQL for returning a limited rowset.",
+      "explanation": "In KQL, `take`, `limit`, and `top ... by` are all valid operators used to restrict the number of rows returned by a query.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 85
+    },
+    {
+      "question": "You are writing a Python script in a Fabric Notebook to visualize a dataset. You have a PySpark DataFrame named `df_sales`. You want to render an interactive, rich table and chart UI directly beneath the notebook cell without importing external visualization libraries like Matplotlib. Which native Fabric function should you use?",
+      "options": {
+        "A": "print(df_sales)",
+        "B": "df_sales.show()",
+        "C": "display(df_sales)",
+        "D": "render_visual(df_sales)"
+      },
+      "correct": "C",
+      "reasoning_process": "In Microsoft Fabric (and Databricks/Synapse), the `display()` function is uniquely implemented by the notebook environment to provide a rich, interactive HTML output. Users can toggle between table views and auto-generated charts natively. `df.show()` only prints plain text ASCII tables. `print()` prints object memory addresses.",
+      "explanation": "The `display()` function renders DataFrames as interactive, visually rich tables and charts directly within the notebook output.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 86
+    },
+    {
+      "question": "Your organization stores complex JSON diagnostic logs in a KQL Database. A specific column named `TelemetryPayload` contains a nested JSON object. You need to write a KQL query to extract the `ErrorCode` property from this JSON object so you can count the occurrences of each error. Which KQL function or operator should you use?",
+      "options": {
+        "A": "JSON_VALUE()",
+        "B": "parse_json()",
+        "C": "OPENJSON()",
+        "D": "CROSS APPLY"
+      },
+      "correct": "B",
+      "reasoning_process": "In Kusto Query Language (KQL), the `parse_json()` function (or extracting properties dynamically like `extend Error = tostring(TelemetryPayload.ErrorCode)`) is the native way to parse and interact with dynamic JSON data. `JSON_VALUE`, `OPENJSON`, and `CROSS APPLY` are T-SQL constructs, not KQL.",
+      "explanation": "The `parse_json()` function and dynamic object traversal are native KQL features used to extract properties from JSON payloads.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 87
+    },
+    {
+      "question": "You want to generate a PySpark script to detect anomalies in a dataset by using 'Copilot in Microsoft Fabric' within a Notebook experience. What is a strict prerequisite for the Copilot chat pane to be available and functional in your workspace?",
+      "options": {
+        "A": "The workspace must be linked to a Fabric capacity of F64 or higher.",
+        "B": "The user must have a Power BI Premium Per User (PPU) license.",
+        "C": "The data must be stored in a Warehouse rather than a Lakehouse.",
+        "D": "The workspace must have Git integration enabled."
+      },
+      "correct": "A",
+      "reasoning_process": "Copilot capabilities across Microsoft Fabric (including Copilot for Notebooks, Power BI, and Data Factory) require significant AI compute. Microsoft restricts the Copilot feature to workspaces hosted on a Fabric F64 capacity or higher (or P1+ equivalent). Smaller SKUs (F2-F32) do not support it.",
+      "explanation": "Copilot in Fabric requires a minimum capacity SKU of F64 (or legacy P1) to handle the underlying large language model compute.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 88
+    },
+    {
+      "question": "You are querying data from a Fabric Lakehouse using the SQL analytics endpoint. You execute the following query: `SELECT COUNT(*) FROM [SalesDB].[dbo].[FactSales]`. The query returns an error indicating the object cannot be found. You confirm the table exists in the Lakehouse 'Files' section as a folder of Parquet files. Why is the query failing?",
+      "options": {
+        "A": "The SQL analytics endpoint only supports the `OPENROWSET` function for Parquet files.",
+        "B": "You must assign the 'Workspace Admin' role to yourself to query Parquet files.",
+        "C": "The data is not formatted as Delta tables and registered in the managed 'Tables' section.",
+        "D": "The query must be executed using KQL instead of T-SQL."
+      },
+      "correct": "C",
+      "reasoning_process": "The Fabric Lakehouse SQL analytics endpoint automatically discovers and serves tables only if they are stored in the open Delta Lake format and located in the managed 'Tables' section of the Lakehouse. It cannot directly query unmanaged raw Parquet or CSV files located in the 'Files' section.",
+      "explanation": "The SQL analytics endpoint exclusively queries managed tables stored in the Delta format; it cannot query raw files in the Lakehouse 'Files' area.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 89
+    },
+    {
+      "question": "A business user needs to connect Microsoft Excel to a 'Sales' semantic model hosted in a Fabric workspace to create highly customized PivotTables. They want the PivotTable to query the Fabric model live without downloading the data into Excel. Which feature enables this?",
+      "options": {
+        "A": "Export to CSV",
+        "B": "Analyze in Excel (via XMLA endpoint)",
+        "C": "Power Query Web Connector",
+        "D": "Dataflow Gen2"
+      },
+      "correct": "B",
+      "reasoning_process": "Analyze in Excel leverages the XMLA endpoint to establish a live OLE DB connection from Excel to the Power BI/Fabric semantic model. This allows users to build PivotTables in Excel that send MDX/DAX queries directly to the cloud model, maintaining a single source of truth without data duplication.",
+      "explanation": "Analyze in Excel creates a live connection from Excel PivotTables to Fabric semantic models, utilizing the underlying XMLA endpoint.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "topic_tag": "Use Microsoft Fabric to expand data analytics capabilities",
+      "seq": 90
+    },
+    {
+      "question": "You are performing time-series analysis on IoT data in an Eventhouse KQL Database. You want to aggregate the average temperature recorded by sensors into 15-minute intervals. Which KQL function simplifies grouping time-series data into fixed intervals?",
+      "options": {
+        "A": "DATEPART()",
+        "B": "bin()",
+        "C": "GROUP BY ROLLUP",
+        "D": "tumble()"
+      },
+      "correct": "B",
+      "reasoning_process": "In KQL, the `bin()` function (sometimes aliased as `floor()`) rounds values down to an integer multiple of a given bin size. It is explicitly designed for time-series aggregation. For example: `summarize avg(Temperature) by bin(Timestamp, 15m)`.",
+      "explanation": "The `bin()` function in KQL is specifically used to round timestamps down to fixed intervals, making time-series aggregations extremely simple.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 91
+    },
+    {
+      "question": "You have a complex semantic model in Microsoft Fabric. You need to provide a set of highly formatted, pixel-perfect financial invoices that can be exported exactly as multi-page PDFs or printed on physical paper. Standard Power BI interactive reports do not paginate correctly for printing. Which Fabric artifact should you use?",
+      "options": {
+        "A": "Power BI Paginated Report",
+        "B": "Fabric Notebook",
+        "C": "Data Activator Reflex",
+        "D": "Fabric Dataflow Gen2"
+      },
+      "correct": "A",
+      "reasoning_process": "Power BI Paginated Reports (built on SQL Server Reporting Services / RDL technology) are designed explicitly for 'pixel-perfect' printing and exporting multi-page documents (like invoices, catalogs, or receipts). Interactive Power BI reports are optimized for on-screen exploration, not physical pagination.",
+      "explanation": "Paginated Reports are the correct tool for creating highly formatted, multi-page documents designed for printing and PDF generation.",
+      "difficulty": "easy",
+      "bloom_level": "understand",
+      "topic_tag": "Use Microsoft Fabric to expand data analytics capabilities",
+      "seq": 92
+    },
+    {
+      "question": "You are writing a T-SQL query in Workspace A's Warehouse named `WH_Sales`. You need to join a table from this warehouse with a dimension table located in a Lakehouse named `LH_Master` that resides in the same workspace. How do you reference the Lakehouse table in your T-SQL query?",
+      "options": {
+        "A": "Use an Azure Data Factory Linked Service.",
+        "B": "Use standard three-part naming: `LH_Master.dbo.DimProduct`.",
+        "C": "Use the `OPENROWSET` function with the OneLake ABFS path.",
+        "D": "You cannot join data between a Warehouse and a Lakehouse using T-SQL."
+      },
+      "correct": "B",
+      "reasoning_process": "One of the key capabilities of the Fabric SQL engine is native cross-database querying within a workspace. Because the SQL engine unifies both Warehouses and Lakehouse SQL analytics endpoints, you can simply use T-SQL three-part naming (`database.schema.table`) to seamlessly join tables across different Fabric items.",
+      "explanation": "Fabric supports native cross-database querying, allowing you to join tables across Lakehouses and Warehouses using standard three-part naming.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 93
+    },
+    {
+      "question": "A data engineer is configuring an Eventhouse. They create an Eventstream to ingest real-time clicks from a web application and route them to a KQL Database. They notice a 15-minute delay before the data is visible to users querying the semantic model via Direct Lake mode. Why is this happening?",
+      "options": {
+        "A": "The KQL Database requires a manual index rebuild every 15 minutes.",
+        "B": "Direct Lake mode cannot be used with Eventhouses.",
+        "C": "OneLake availability batches streaming data into Delta files, which introduces a slight latency.",
+        "D": "The Eventstream pipeline is configured with a tumbling window."
+      },
+      "correct": "C",
+      "reasoning_process": "When KQL data is configured for 'OneLake availability', the Kusto engine continuously writes the streaming data out to OneLake as Parquet/Delta files asynchronously. Because Delta requires file-level commits, this batching process introduces a slight delay (typically a few minutes) compared to querying the Kusto engine directly (which has near-zero latency).",
+      "explanation": "Translating KQL streaming data into physical Delta files for OneLake availability introduces a micro-batching latency before it appears in Direct Lake models.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "topic_tag": "Use Microsoft Fabric to expand data analytics capabilities",
+      "seq": 94
+    },
+    {
+      "question": "You are writing exploratory Spark SQL queries in a Notebook. You want to see the execution plan (the logical and physical plan) that the Catalyst Optimizer generated for your query to understand why a join is slow. Which Spark SQL command should you prepend to your `SELECT` statement?",
+      "options": {
+        "A": "PROFILE",
+        "B": "EXPLAIN",
+        "C": "ANALYZE",
+        "D": "OPTIMIZE"
+      },
+      "correct": "B",
+      "reasoning_process": "In Spark SQL (as in many SQL dialects), the `EXPLAIN` command is used to output the execution plan of a query without actually running the query. In Spark, it shows the Parsed Logical Plan, Analyzed Logical Plan, Optimized Logical Plan, and the final Physical Plan.",
+      "explanation": "The EXPLAIN command displays the Spark Catalyst Optimizer's logical and physical execution plans for a given query.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 95
+    },
+    {
+      "question": "Which of the following scenarios is the MOST appropriate use case for implementing Microsoft Data Activator?",
+      "options": {
+        "A": "Transforming 10 TB of raw JSON data into a Gold Delta table nightly.",
+        "B": "Creating a semantic model with Row-Level Security for the HR department.",
+        "C": "Monitoring a live Power BI dashboard and triggering an Azure Function when machine temperature exceeds 90 degrees.",
+        "D": "Migrating an on-premises SQL Server database to Azure SQL."
+      },
+      "correct": "C",
+      "reasoning_process": "Data Activator is specifically designed for real-time monitoring and triggering automated actions (Reflexes) based on data thresholds or conditions changing over time. It is not an ETL tool (A), a modeling tool (B), or a migration tool (D).",
+      "explanation": "Data Activator is the automation layer in Fabric used to trigger workflows or alerts based on real-time data conditions.",
+      "difficulty": "easy",
+      "bloom_level": "understand",
+      "topic_tag": "Use Microsoft Fabric to expand data analytics capabilities",
+      "seq": 96
+    },
+    {
+      "question": "You are performing exploratory data analysis using a Fabric Notebook. You need to read a CSV file that you uploaded to the 'Files' section of the Lakehouse. Which object allows you to dynamically retrieve the OneLake path to this file without hardcoding the workspace and item GUIDs?",
+      "options": {
+        "A": "The Notebook's built-in `mssparkutils` library.",
+        "B": "The DAX `PATH()` function.",
+        "C": "The KQL `external_data()` function.",
+        "D": "The Power BI REST API."
+      },
+      "correct": "A",
+      "reasoning_process": "Microsoft Spark Utilities (`mssparkutils`) is a built-in package in Fabric Notebooks. It provides functions to interact with the file system (`mssparkutils.fs.ls()`), get lakehouse paths, and manage notebook execution, making it much easier to handle dynamic paths without hardcoding ABFS URLs containing GUIDs.",
+      "explanation": "The mssparkutils library provides native utilities to interact with OneLake file systems and retrieve dynamic paths inside Fabric Notebooks.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 97
+    },
+    {
+      "question": "You have a semantic model published in a Fabric workspace. You want to execute a complex DAX query against this model from an external Python script running on an on-premises server. Which Fabric endpoint enables this connectivity?",
+      "options": {
+        "A": "The SQL analytics endpoint",
+        "B": "The XMLA endpoint",
+        "C": "The OneLake DFS endpoint",
+        "D": "The Eventhouse ingestion endpoint"
+      },
+      "correct": "B",
+      "reasoning_process": "The XMLA (XML for Analysis) endpoint allows external tools (like Python scripts using the `adomd` library, SSMS, DAX Studio, or Tabular Editor) to connect to, query, and manage Fabric and Power BI semantic models using standard Analysis Services protocols.",
+      "explanation": "The XMLA endpoint is the industry-standard gateway that allows external applications to query and manage Fabric semantic models.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Use Microsoft Fabric to expand data analytics capabilities",
+      "seq": 98
+    },
+    {
+      "question": "You are analyzing website traffic data in an Eventhouse. You write a KQL query that joins an `Events` table (1 billion rows) with a `Users` table (10,000 rows). To maximize query performance, which join strategy should you explicitly hint in KQL?",
+      "options": {
+        "A": "hint.strategy=broadcast",
+        "B": "hint.strategy=shuffle",
+        "C": "hint.remote=true",
+        "D": "hint.concurrency=max"
+      },
+      "correct": "A",
+      "reasoning_process": "Similar to Spark, the Kusto engine supports join hints. When joining a massive table (Events) with a very small table (Users), using `hint.strategy=broadcast` forces the engine to replicate the small table to all nodes, avoiding the massive network shuffle of the large table and drastically improving performance.",
+      "explanation": "Using a broadcast join hint in KQL optimizes performance when joining a massive fact table to a small lookup table.",
+      "difficulty": "hard",
+      "bloom_level": "apply",
+      "topic_tag": "Perform exploratory analytics",
+      "seq": 99
+    },
+    {
+      "question": "An analyst uses the Copilot chat pane in Power BI (connected to a Fabric semantic model) to ask: 'Summarize the key drivers of revenue loss in Q3'. Copilot generates a text narrative. What underlying technology within Fabric guarantees that the data sent to the AI model is not used to train public OpenAI models?",
+      "options": {
+        "A": "Object-Level Security (OLS)",
+        "B": "Azure OpenAI Service integration",
+        "C": "Data Loss Prevention (DLP) policies",
+        "D": "Microsoft Defender for Cloud"
+      },
+      "correct": "B",
+      "reasoning_process": "Copilot in Microsoft Fabric is powered by Azure OpenAI Service, which runs securely within the Microsoft Cloud boundary. By architectural design, Microsoft's Azure OpenAI Service strictly isolates customer data and guarantees that prompts and data are never used to train the public foundational models (like ChatGPT).",
+      "explanation": "Fabric Copilot is built on the Azure OpenAI Service, which guarantees data privacy and ensures customer data is never used to train public AI models.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "topic_tag": "Use Microsoft Fabric to expand data analytics capabilities",
+      "seq": 100
+    }
+  ],
+  "notes": [
+    {
+      "topic_title": "Plan a data analytics environment",
+      "summary": "This objective covers evaluating and selecting the correct Fabric architecture, capacities, and connection strategies to meet business requirements. It emphasizes balancing compute needs (F SKUs) against feature requirements (like Copilot) and ensuring data accessibility through zero-copy strategies.",
+      "key_concepts": [
+        "Fabric Capacity (F SKUs): The foundational compute resource in Fabric. Defines performance limits and feature availability (e.g., F64 required for Copilot).",
+        "OneLake: The unified, logical data lake for your entire organization. 'The OneDrive for data'.",
+        "Shortcuts: Zero-copy virtualization mechanism to link external data (ADLS Gen2, S3, Dataverse) or other Fabric workspaces into OneLake.",
+        "On-premises Data Gateway: Software required to securely connect Fabric cloud services to private, on-premises data sources.",
+        "Tenant vs. Workspace Settings: Administrators control features globally at the tenant level, which can sometimes be delegated or overridden at the capacity or workspace level."
+      ],
+      "formulas": [],
+      "important_facts": [
+        "F-SKU capacities can be paused to save costs; legacy P-SKUs cannot.",
+        "Copilot in Fabric strictly requires an F64 capacity or higher.",
+        "Shortcuts do not duplicate data; they merely create a symbolic link to the source data."
+      ],
+      "examples": [
+        "Using a OneLake shortcut to query 50TB of historical data in ADLS Gen2 using a Fabric Warehouse, saving massive data duplication costs.",
+        "Pausing a Dev/Test F-SKU capacity over the weekend via REST API to reduce monthly Azure consumption."
+      ],
+      "memory_hooks": [
+        "F-SKU = Flexible (can pause).",
+        "F64 = 'First Class AI' (minimum for Copilot)."
+      ]
+    },
+    {
+      "topic_title": "Implement and manage a data analytics environment",
+      "summary": "This objective focuses on access control, security enforcement, and content distribution within Fabric workspaces. It covers the hierarchy of workspace roles, sharing artifacts securely, and endorsing official company data.",
+      "key_concepts": [
+        "Workspace Roles: Admin (full control), Member (manage items/users), Contributor (manage items), Viewer (read data only).",
+        "Row-Level Security (RLS): DAX-based security that filters data rows based on the user's identity.",
+        "Object-Level Security (OLS): Hides entire tables or columns from specific users.",
+        "Power BI Apps: The recommended way to bundle and distribute a curated set of reports and dashboards to large audiences.",
+        "Endorsement: Marking data artifacts as 'Promoted' (ready for broad use) or 'Certified' (authoritative organizational standard)."
+      ],
+      "formulas": [],
+      "important_facts": [
+        "RLS is bypassed by Admin, Member, and Contributor roles. RLS only strictly applies to the Viewer role.",
+        "Apps isolate consumers from workspace clutter and protect underlying models from accidental edits.",
+        "Certifying a semantic model requires special tenant-admin enabled permissions; Promoted can be done by item owners."
+      ],
+      "examples": [
+        "Assigning a regional manager the Viewer role so RLS DAX filters restrict their view to only 'West Region' sales.",
+        "Publishing an App containing 3 executive dashboards to the entire 'Leadership' Entra ID group without granting them workspace access."
+      ],
+      "memory_hooks": [
+        "RLS Rule: RLS Requires Viewers (Admins/Members/Contributors crush RLS)."
+      ]
+    },
+    {
+      "topic_title": "Manage the analytics development lifecycle",
+      "summary": "This objective introduces Application Lifecycle Management (ALM) in Fabric. It covers how to use Git for version control and Deployment Pipelines for moving artifacts smoothly from development through to production.",
+      "key_concepts": [
+        "Git Integration: Syncs a workspace with Azure DevOps Repos or GitHub. Enables branching, committing, and PR workflows for Fabric artifacts.",
+        "Deployment Pipelines: Native tool to promote content across stages (typically Dev -> Test -> Prod).",
+        "Deployment Rules: Configurations that automatically swap parameters or data source connections when moving between pipeline stages.",
+        "Supported Artifacts: Not all Fabric items support Git/Pipelines yet (e.g., Lakehouses, Notebooks, Semantic Models do; some specialized real-time items may not)."
+      ],
+      "formulas": [],
+      "important_facts": [
+        "Deployment pipelines move metadata and schema (the 'code'), not the actual underlying data.",
+        "Merge conflicts in Git cannot be resolved in the Fabric UI; they must be fixed in ADO/GitHub.",
+        "Deployment rules are essential to ensure the 'Test' workspace points to the 'Test' database, not the 'Dev' database."
+      ],
+      "examples": [
+        "A team of engineers works on separate branches in ADO, merges via Pull Request, and then syncs the Dev workspace to the main branch.",
+        "Setting a deployment rule so that when a Dataflow Gen2 moves to Prod, it automatically connects to the Prod SQL Server."
+      ],
+      "memory_hooks": [
+        "Git is for Source Code (Dev tracking). Pipelines are for Promotion (Dev -> Test -> Prod)."
+      ]
+    },
+    {
+      "topic_title": "Get data from data sources",
+      "summary": "This objective covers the initial ingestion of data into the Fabric ecosystem. It focuses heavily on choosing the right ingestion pattern—such as Pipelines for orchestration and bulk movement, Dataflow Gen2 for visual transformation, or Shortcuts for zero-copy virtualization.",
+      "key_concepts": [
+        "OneLake Shortcuts: Virtual links to external storage (ADLS, S3) or other Fabric items that prevent data duplication.",
+        "Data Pipelines: ADF-based orchestration tool. Use Copy Data activity for high-speed, bulk data ingestion.",
+        "Dataflow Gen2: Power Query-based ETL tool. Excellent for citizen developers needing to ingest and visually transform data.",
+        "Cross-database querying: Fabric Warehouses natively support three-part naming (`db.schema.table`) to query data across warehouses in a workspace.",
+        "Get Metadata Activity: Pipeline activity used to inspect file properties (like existence or size) before processing."
+      ],
+      "formulas": [],
+      "important_facts": [
+        "Shortcuts only work with supported systems (currently ADLS Gen2, AWS S3, Dataverse, Google Cloud Storage, and OneLake).",
+        "The Copy Data activity is generally faster than Dataflow Gen2 for raw data movement because it avoids the mashup engine.",
+        "Fast Copy in Dataflow Gen2 requires both the source and destination to natively support the feature."
+      ],
+      "examples": [
+        "Creating an S3 shortcut in a Lakehouse to query a massive 100TB historical log bucket without moving it to Azure.",
+        "Using a Data Pipeline ForEach loop to dynamically parameterize a Copy activity that ingests 50 on-premises SQL tables into OneLake."
+      ],
+      "memory_hooks": [
+        "Pipelines = Orchestration & Bulk. Dataflows = Visual Transform. Shortcuts = Zero Copy."
+      ]
+    },
+    {
+      "topic_title": "Transform data",
+      "summary": "This objective focuses on cleansing, shaping, and structuring data once it is accessible in Fabric. It covers PySpark in Notebooks, T-SQL in Warehouses, Power Query in Dataflows, and standardizing data via the Medallion architecture.",
+      "key_concepts": [
+        "Medallion Architecture: Bronze (Raw), Silver (Cleansed/Conformed), Gold (Business/Star Schema).",
+        "V-Order: Microsoft's optimization for Delta Parquet files that massively speeds up read performance for Spark, SQL, and Power BI.",
+        "Query Folding: The ability of Power Query to push M code transformations down to the source database as native SQL.",
+        "PySpark transformations: Using DataFrame APIs (like `.dropna()`, `.join()`) to manipulate large scale data in memory.",
+        "Delta Lake MERGE: The Spark SQL command used to handle Slowly Changing Dimensions (UPSERT patterns) in a Lakehouse."
+      ],
+      "formulas": [],
+      "important_facts": [
+        "Fabric Lakehouses require data to be in Delta format to be recognized as managed tables.",
+        "The Lakehouse SQL analytics endpoint is strictly read-only. Modifying data requires Spark/Notebooks.",
+        "Breaking query folding in Dataflow Gen2 can cause severe performance issues, especially over on-premises gateways."
+      ],
+      "examples": [
+        "Writing a PySpark script to deduplicate records in the Bronze layer and write the cleaned data to the Silver layer Delta tables.",
+        "Using a Broadcast Join in Spark to efficiently join a massive fact table with a tiny dimension table without network shuffling."
+      ],
+      "memory_hooks": [
+        "Lakehouse = Spark (Read/Write) + SQL (Read Only). Warehouse = SQL (Read/Write)."
+      ]
+    },
+    {
+      "topic_title": "Implement and manage semantic models",
+      "summary": "This objective introduces the consumption layer. It covers the creation of custom semantic models, managing default semantic models, and understanding how Direct Lake mode interacts with Fabric storage.",
+      "key_concepts": [
+        "Default Semantic Model: Automatically created with every Lakehouse/Warehouse. Can be managed via the SQL endpoint UI.",
+        "Direct Lake Mode: Fabric's native engine behavior that reads Delta files directly from OneLake, combining the speed of Import with the freshness of DirectQuery.",
+        "Fallback to DirectQuery: Occurs if Direct Lake cannot process a query natively, such as when SQL-based RLS/OLS is applied.",
+        "DAX (Data Analysis Expressions): The language used to build calculated columns, measures, and calculated tables in models."
+      ],
+      "formulas": [],
+      "important_facts": [
+        "Direct Lake mode strictly requires data to be in Delta format in OneLake.",
+        "Applying security (RLS) at the Warehouse/SQL endpoint level breaks Direct Lake performance by forcing DirectQuery fallback.",
+        "New tables created in a Lakehouse are not automatically added to the default semantic model unless 'Sync' is enabled universally."
+      ],
+      "examples": [
+        "Using the Lakehouse UI to check boxes to add newly created Gold layer tables to the default semantic model.",
+        "Defining RLS via DAX directly in the custom semantic model to preserve Direct Lake performance."
+      ],
+      "memory_hooks": [
+        "Direct Lake needs Delta. SQL Security kills Direct Lake."
+      ]
+    },
+    {
+      "topic_title": "Batch B Extension Notes",
+      "summary": "This note supplements the 'Prepare and serve data' domain, emphasizing optimization, Spark execution fundamentals, and semantic model relationships.",
+      "key_concepts": [
+        "Lazy Evaluation: Spark builds an execution plan for transformations but delays physical execution until an 'action' (like display or write) is called.",
+        "Partitioning vs. Z-Ordering (V-Order): Partitioning physically splits data into folders by column values; V-Order sorts data within Parquet files for engine optimization.",
+        "Direct Lake Fallback: Features like SQL Views, Row-Level Security, or unmanaged files force Direct Lake semantic models to fall back to DirectQuery mode.",
+        "CALCULATE: The most important DAX function for advanced modeling, used to transition row context to filter context or override existing filters."
+      ],
+      "formulas": [],
+      "important_facts": [
+        "Direct Lake models cannot natively query SQL Views created in the Lakehouse SQL endpoint.",
+        "Using `VACUUM` is essential for compliance and cost management in Lakehouses to remove old, unreferenced Parquet files.",
+        "In semantic modeling, the standard architecture requires Many-to-One relationships from Fact to Dimension tables with a Single cross-filter direction."
+      ],
+      "examples": [
+        "Using a Data Pipeline 'Until' activity to iterate through a paginated REST API until all records are extracted.",
+        "Replacing a Snowflake schema with a Star Schema (Denormalization) to simplify DAX logic and speed up Power BI visual rendering."
+      ],
+      "memory_hooks": [
+        "Spark Actions trigger execution. Pipeline Parameters inject values from outside."
+      ]
+    },
+    {
+      "topic_title": "Design and build semantic models",
+      "summary": "This objective focuses on foundational and advanced data modeling using DAX and relationships. It covers security (RLS/OLS), handling role-playing dimensions, and creating dynamic features to enhance reporting.",
+      "key_concepts": [
+        "Direct Lake Mode: Native Fabric capability that memory-maps OneLake Delta files directly. Combines Import performance with DirectQuery freshness.",
+        "Row-Level Security (RLS): Uses DAX (e.g., `USERPRINCIPALNAME()`) to filter rows dynamically based on the viewer's identity.",
+        "Object-Level Security (OLS): Hides entire columns or tables from unauthorized users. If an OLS-secured column is used in a visual, the visual breaks for unauthorized users.",
+        "Calculation Groups: Replaces redundant measures by defining logic (e.g., YTD) that can be applied to any existing measure using `SELECTEDMEASURE()`.",
+        "Field Parameters: Allows users to dynamically change the measures or dimensions displayed in a visual using a slicer."
+      ],
+      "formulas": [
+        "Dynamic RLS: `[EmailColumn] = USERPRINCIPALNAME()`",
+        "Virtual Relationship: `CALCULATE([Measure], TREATAS(VALUES(Dim[Key]), Fact[Key]))`",
+        "Role-Playing Dim: `CALCULATE([Measure], USERELATIONSHIP(Fact[Date], Dim[Date]))`"
+      ],
+      "important_facts": [
+        "A semantic model can only have one active relationship between two tables; use `USERELATIONSHIP` to trigger inactive ones.",
+        "Calculated columns are evaluated at data refresh time (row context). Measures are evaluated at query time (filter context).",
+        "Calculated columns must be used if you want to put the result on a visual's axis or in a slicer."
+      ],
+      "examples": [
+        "Using Field Parameters to let a user toggle a chart axis between 'Country', 'Region', and 'City' without creating three separate charts.",
+        "Applying OLS to hide the 'Salary' column from the 'SalesTeam' security group."
+      ],
+      "memory_hooks": [
+        "RLS = Rows (data). OLS = Objects (metadata & visuals break).",
+        "Columns slice (axis). Measures summarize (values)."
+      ]
+    },
+    {
+      "topic_title": "Optimize enterprise-scale semantic models",
+      "summary": "This objective covers performance tuning, memory optimization, and scaling semantic models for enterprise workloads using native settings and external tools.",
+      "key_concepts": [
+        "VertiPaq Engine: The columnar database engine behind Import mode. Heavily impacted by cardinality (number of unique values).",
+        "DAX Studio & Server Timings: External tool used to trace execution times, showing the split between the Formula Engine (FE) and Storage Engine (SE).",
+        "Direct Lake Fallback: When Direct Lake encounters un-optimizable scenarios (like SQL Views or OLS), it falls back to the slower DirectQuery mode.",
+        "User-Defined Aggregations: Mapping a summarized Import table to a detailed DirectQuery table so fast queries hit the cache, while drill-downs hit the source.",
+        "Incremental Refresh: Partitioning tables to keep years of historical data but only refreshing the last few days to speed up processing."
+      ],
+      "formulas": [
+        "DAX Variables: `VAR _Amount = SUM(Fact[Sales]) RETURN IF(_Amount > 10, _Amount, 0)`"
+      ],
+      "important_facts": [
+        "High cardinality columns (like GUIDs or timestamps) defeat VertiPaq compression and should be removed if not needed.",
+        "Always disable 'Auto date/time' in Power BI to prevent memory bloat from hidden date tables.",
+        "Tables acting as dimensions for both Import and DirectQuery fact tables must be set to 'Dual' storage mode."
+      ],
+      "examples": [
+        "Removing a 30-million row GUID 'TransactionID' column based on VertiPaq Analyzer results, reducing model size by 50%.",
+        "Using DAX Studio's Server Timings to identify that a slow measure is performing too much work in the Formula Engine instead of the Storage Engine."
+      ],
+      "memory_hooks": [
+        "High Cardinality kills VertiPaq. Auto Date/Time kills Memory.",
+        "Direct Lake hates Views (causes Fallback)."
+      ]
+    },
+    {
+      "topic_title": "Perform exploratory analytics",
+      "summary": "This objective focuses on using the right tool for ad-hoc data discovery. It covers using the SQL analytics endpoint for T-SQL exploration, Spark Notebooks with PySpark/Spark SQL, and Kusto Query Language (KQL) for log data.",
+      "key_concepts": [
+        "SQL Analytics Endpoint: Provides read-only T-SQL querying over managed Delta tables. Ideal for analysts who know SQL but not Spark.",
+        "Spark Notebooks: Supports PySpark, Spark SQL (`%%sql`), Scala, and R. Uses `display()` for rich visual outputs.",
+        "Data Wrangler: A visual tool in Notebooks that profiles data and generates PySpark transformation code.",
+        "KQL (Kusto Query Language): Highly optimized for text search and time-series data. Key commands include `take` (limit), `summarize by bin()` (group by time), and `parse_json()`.",
+        "Cross-Database Querying: Fabric natively supports joining tables across Lakehouses and Warehouses using three-part T-SQL naming."
+      ],
+      "formulas": [
+        "KQL Time Binning: `summarize avg(Value) by bin(Timestamp, 1h)`",
+        "KQL Top Rows: `| top 10 by Date desc`"
+      ],
+      "important_facts": [
+        "The SQL analytics endpoint cannot query raw Parquet/CSV files; data must be saved as managed Delta tables.",
+        "SQL Views created in the endpoint are logical constructs and do not duplicate underlying OneLake data.",
+        "Copilot in Fabric strictly requires an F64 capacity or larger to function."
+      ],
+      "examples": [
+        "An analyst using `mssparkutils.fs.ls()` in a notebook to dynamically loop through files in a Lakehouse.",
+        "Using a broadcast join hint (`hint.strategy=broadcast`) in KQL to optimize a query between a massive log table and a small dimension table."
+      ],
+      "memory_hooks": [
+        "SQL Endpoint = Read Only Delta. Data Wrangler = Visual PySpark."
+      ]
+    },
+    {
+      "topic_title": "Use Microsoft Fabric to expand data analytics capabilities",
+      "summary": "This objective covers integrating Fabric with advanced and external analytical capabilities. This includes Real-Time Intelligence (Eventhouses), automated alerting (Data Activator), and external integrations via XMLA.",
+      "key_concepts": [
+        "Eventhouse / KQL Database: Purpose-built for massive, low-latency streaming data (telemetry, IoT, logs).",
+        "Data Activator: Fabric's automation layer. Triggers actions (emails, Teams, flows) based on data thresholds in semantic models or Eventstreams.",
+        "XMLA Endpoint: The API that allows external tools (Excel, SSMS, Tabular Editor) to connect to and manage Fabric semantic models natively.",
+        "Analyze in Excel: Uses the XMLA endpoint to create live PivotTables connected directly to cloud semantic models without downloading data.",
+        "Power BI Paginated Reports: Used for pixel-perfect, highly formatted documents designed for printing and PDF generation."
+      ],
+      "formulas": [],
+      "important_facts": [
+        "Direct Lake mode can query KQL Databases only if 'OneLake availability' is enabled, which mirrors the data into Delta files.",
+        "OneLake availability introduces a slight micro-batching delay compared to querying the native Kusto engine.",
+        "Fabric Copilot data is secured via Azure OpenAI and never trains public models."
+      ],
+      "examples": [
+        "Configuring Data Activator to send a Teams message when an IoT sensor's temperature measure exceeds 100 degrees.",
+        "Providing a financial team with a Paginated Report to print 50-page monthly invoices natively from a Fabric Warehouse."
+      ],
+      "memory_hooks": [
+        "Data Activator = Triggers/Alerts. XMLA = External Tools. Paginated = Pixel-perfect printing."
+      ]
+    }
+  ]
+}
