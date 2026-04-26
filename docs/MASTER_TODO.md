@@ -32,6 +32,33 @@ Streamlit polish, and the WCAG a11y backlog. Each wave is ONE coherent commit.
 - [x] **Bodhi tree load**: decision = keep the 500ms-min CSS fallback. Intentional
   `requestIdleCallback` defer until browser idle. No code change.
 
+### Wave 2.8 — AWS exam code refresh (2026-04-25 late)
+
+AWS rotated two cert programs in the last 7 months:
+  - SOA-C02 (SysOps Administrator) RETIRED 2025-09-29 → SOA-C03 (CloudOps Engineer Associate)
+  - MLS-C01 (ML Specialty) RETIRING 2026-03-31 → split into MLA-C01 (ML Engineer
+    Associate) + AIF-C01 (AI Practitioner — new foundational cert)
+
+Slugs migrated (no Supabase content existed for these → safe rename, no DB
+migration required):
+  - aws-sysops  → aws-cloudops
+  - aws-mls     → aws-mla
+  - NEW         + aws-aif
+
+Files touched:
+- [x] `gyan-ai-web/src/lib/taxonomy.ts` — exam name + topics blueprint
+- [x] `gyan-ai-web/src/components/ITDashboard.tsx` — EXAM_SLUG_MAP entries
+- [x] `gyan-ai-web/src/lib/types.ts` — SLUG_LABEL_MAP entries
+- [x] `gyan-ai-web/src/data/staticITDataExtended.ts` — renamed key + IDs (n-aws-mls-* → n-aws-mla-*, ep-aws-mls-* → ep-aws-mla-*)
+- [x] `gyan-ai-web/scripts/seed_it_data.mjs` — DB seed script
+- [x] `gyan-ai-pipeline/tests/test_loader_slug.py` — canonical slug whitelist
+- [x] `gyan-ai-pipeline/scripts/audit_it_slugs.sql` — header + new Q6 to detect
+  any orphan rows still using retired slugs (returns 0 unless someone loaded
+  content under the old slugs out-of-band)
+
+Verification: ran AST-based whitelist check — 28 slugs, all valid kebab-case,
+new slugs present, retired slugs absent. ✅
+
 ### Wave 2.7 — Wildcard CSS + IT-respects-light/dark + SW cache bump (2026-04-25 late)
 
 User reported persisting glass/ghost in 3 spots after Wave 2.6:

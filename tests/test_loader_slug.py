@@ -37,7 +37,15 @@ SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 # other direction.
 CANONICAL_SIDEBAR_SLUGS = {
     # AWS
-    "aws-cp", "aws-saa", "aws-dva", "aws-sysops", "aws-mls",
+    # SOA-C02 retired 2025-09-29 → SOA-C03 (CloudOps Engineer Associate).
+    # MLS-C01 retiring 2026-03-31 → MLA-C01 (ML Engineer Associate) +
+    #   AIF-C01 (AI Practitioner foundational cert). Old slugs aws-sysops
+    #   and aws-mls are dropped — they had no Supabase content yet, so no
+    #   migration needed. If those slugs ever reappear in metadata.exam,
+    #   the SLUG_RE check below will still pass them but the SLUG_LABEL_MAP
+    #   lookup in web will return undefined and the dashboard treats them
+    #   as orphaned. Use scripts/audit_it_slugs.sql to detect orphans.
+    "aws-cp", "aws-saa", "aws-dva", "aws-cloudops", "aws-mla", "aws-aif",
     # Azure
     "az-900", "ai-900", "dp-900", "az-104", "dp-700", "dp-600",
     # Google Cloud

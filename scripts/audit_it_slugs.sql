@@ -8,12 +8,18 @@
 -- gyan-ai-web/src/components/ITDashboard.tsx :: EXAM_SLUG_MAP values and
 -- gyan-ai-web/src/config/itBlueprints.ts :: IT_BLUEPRINTS keys.
 --
---   aws-cp, aws-saa, aws-dva, aws-sysops, aws-mls,
+--   aws-cp, aws-saa, aws-dva, aws-cloudops, aws-mla, aws-aif,
 --   az-900, ai-900, dp-900, az-104, dp-700, dp-600,
 --   gcp-ml, gcp-ace, gcp-pde, gemini-api, google-ai-essentials,
 --   snowpro, snowpro-ade, snowpro-genai, snowpro-arch,
 --   psm1, psm2, csm, pspo,
 --   anthropic-prompt, anthropic-api, anthropic-safety
+--
+-- 2026-04-25 AWS exam refresh:
+--   aws-sysops (SOA-C02) RETIRED 2025-09-29 → aws-cloudops (SOA-C03)
+--   aws-mls    (MLS-C01) RETIRING 2026-03-31 → aws-mla (MLA-C01) + aws-aif (AIF-C01)
+-- Run this script periodically — Q5 below detects orphan rows still using
+-- the retired slugs, which would slip past the lowercase-only check.
 -- ============================================================================
 
 -- 1. Everything approved in pyq_bank_v2, grouped by metadata->>exam.
@@ -89,3 +95,45 @@ WHERE payload_type = 'pyq'
   AND raw_data ->> 'exam' IS NOT NULL
   AND raw_data ->> 'exam' ~ '[A-Z]'
 ORDER BY created_at DESC;
+
+-- 6. RETIRED-SLUG detection (2026-04-25 AWS exam refresh).
+--    SOA-C02 retired 2025-09-29 → aws-cloudops (SOA-C03)
+--    MLS-C01 retiring 2026-03-31 → aws-mla (MLA-C01) + aws-aif (AIF-C01)
+--    Returns rows still tagged with the dead slugs. Should be 0 rows
+--    (those slugs never had Supabase content). If anything appears, decide:
+--    relabel to new slug (preserves content) or delete (drop the question).
+SELECT
+  'pyq_bank_v2'                  AS table_name,
+  id,
+  metadata ->> 'exam'            AS exam,
+  question_payload ->> 'topic'   AS topic,
+  created_at
+FROM pyq_bank_v2
+WHERE metadata ->> 'exam' IN ('aws-sysops', 'aws-mls')
+UNION ALL
+SELECT
+  'study_materials',
+  id,
+  metadata ->> 'exam',
+  data_payload ->> 'topic_title',
+  created_at
+FROM study_materials
+WHERE metadata ->> 'exam' IN ('aws-sysops', 'aws-mls')
+UNION ALL
+SELECT
+  'ingestion_triage_queue',
+  id,
+  raw_data ->> 'exam',
+  raw_data ->> 'topic',
+  created_at
+FROM ingestion_triage_queue
+WHERE raw_data ->> 'exam' IN ('aws-sysops', 'aws-mls')
+ORDER BY table_name, created_at DESC;
+
+-- ──── Remediation (review before running!) ───────────────────────────────
+-- UPDATE pyq_bank_v2
+--   SET metadata = jsonb_set(metadata, '{exam}', '"aws-cloudops"')
+--   WHERE metadata ->> 'exam' = 'aws-sysops';
+-- UPDATE pyq_bank_v2
+--   SET metadata = jsonb_set(metadata, '{exam}', '"aws-mla"')
+--   WHERE metadata ->> 'exam' = 'aws-mls';
