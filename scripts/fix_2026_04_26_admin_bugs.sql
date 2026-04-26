@@ -74,32 +74,23 @@ CREATE INDEX IF NOT EXISTS ingestion_triage_queue_reviewed_at_idx
   WHERE reviewed_at IS NOT NULL;
 
 
--- ── Fix 3 (DEFENSIVE) ─────────────────────────────────────────────────────────
--- Document via CHECK constraint that metadata.exam must be lowercase kebab-case
--- when present. Our pipeline enforces this in load_to_supabase.py + tests/
--- test_loader_slug.py, but a CHECK at DB level is a belt-and-braces guard
--- against any future tool / direct psql INSERT bypassing the loader.
+-- ── Fix 3 (DEFERRED) ──────────────────────────────────────────────────────────
+-- Originally this section added DB-level CHECK constraints requiring
+-- metadata.exam to be lowercase kebab-case. Removed from this migration
+-- because some legacy rows in study_materials (and possibly pyq_bank_v2)
+-- have uppercase or otherwise non-kebab slugs from before the loader's
+-- slug enforcement landed (commit 3e18958).
 --
--- Note: not adding to ingestion_triage_queue because raw_data is freeform
--- and may legitimately contain different exam keys.
-
-ALTER TABLE pyq_bank_v2
-  DROP CONSTRAINT IF EXISTS pyq_bank_v2_exam_lowercase_kebab_check;
-ALTER TABLE pyq_bank_v2
-  ADD CONSTRAINT pyq_bank_v2_exam_lowercase_kebab_check
-  CHECK (
-    metadata ->> 'exam' IS NULL
-    OR metadata ->> 'exam' ~ '^[a-z0-9]+(-[a-z0-9]+)*$'
-  );
-
-ALTER TABLE study_materials
-  DROP CONSTRAINT IF EXISTS study_materials_exam_lowercase_kebab_check;
-ALTER TABLE study_materials
-  ADD CONSTRAINT study_materials_exam_lowercase_kebab_check
-  CHECK (
-    metadata ->> 'exam' IS NULL
-    OR metadata ->> 'exam' ~ '^[a-z0-9]+(-[a-z0-9]+)*$'
-  );
+-- The CHECK constraints are deferred to scripts/cleanup_legacy_slugs.sql,
+-- which:
+--   1. Diagnoses violating rows so Arka can review them
+--   2. Normalises lowercase + replaces spaces/dots/underscores with hyphens
+--   3. Then adds the CHECK constraints
+--
+-- The pipeline still enforces lowercase kebab in:
+--   - sources/llm_seed/load_to_supabase.py (slug check)
+--   - tests/test_loader_slug.py            (regression guard)
+-- so all NEW data is correct. The CHECK is a belt-and-braces only.
 
 
 -- ── Verification queries ─────────────────────────────────────────────────────
