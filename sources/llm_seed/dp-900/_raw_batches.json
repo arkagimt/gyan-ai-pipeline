@@ -1,0 +1,1662 @@
+{
+  "certification": "DP-900 Microsoft Azure Data Fundamentals",
+  "mcqs": [
+    {
+      "id": "A-1",
+      "domain": "Domain 1",
+      "topic": "Describe ways to represent data",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which type of data is typically stored in a tabular format with predefined rows and columns?",
+      "options": {
+        "A": "Structured data",
+        "B": "Semi-structured data",
+        "C": "Unstructured data",
+        "D": "Graph data"
+      },
+      "correct_answer": "A",
+      "rationale": "Structured data strictly adheres to a fixed schema, allowing it to be neatly organized into rows and columns in relational systems."
+    },
+    {
+      "id": "A-2",
+      "domain": "Domain 1",
+      "topic": "Describe ways to represent data",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Audio files, video files, and raw images are examples of which data type?",
+      "options": {
+        "A": "Structured data",
+        "B": "Semi-structured data",
+        "C": "Unstructured data",
+        "D": "Relational data"
+      },
+      "correct_answer": "C",
+      "rationale": "Unstructured data lacks a predefined data model or schema, making it ideal for raw media files."
+    },
+    {
+      "id": "A-3",
+      "domain": "Domain 1",
+      "topic": "Describe ways to represent data",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "Why are JSON and XML files classified as semi-structured data?",
+      "options": {
+        "A": "They contain media files alongside textual data.",
+        "B": "They enforce a rigid relational schema across all records.",
+        "C": "They use tags or keys to organize data without a strict, uniform schema.",
+        "D": "They require a predefined number of columns before data can be ingested."
+      },
+      "correct_answer": "C",
+      "rationale": "Semi-structured data uses internal tags/keys to separate elements, allowing flexibility where different entities can have different attributes."
+    },
+    {
+      "id": "A-4",
+      "domain": "Domain 1",
+      "topic": "Describe ways to represent data",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "A developer is reviewing a dataset containing IoT device telemetry. Each record has a varying number of attributes depending on the device type, formatted as nested key-value pairs. What type of data does this represent?",
+      "options": {
+        "A": "Unstructured",
+        "B": "Semi-structured",
+        "C": "Structured",
+        "D": "Relational"
+      },
+      "correct_answer": "B",
+      "rationale": "Key-value pairs with nested, flexible schemas are classic examples of semi-structured data like JSON."
+    },
+    {
+      "id": "A-5",
+      "domain": "Domain 1",
+      "topic": "Describe ways to represent data",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "You need to store historical email text for analysis. The text does not have a predefined schema, but you need to extract keywords later. Which data category should you use?",
+      "options": {
+        "A": "Relational data",
+        "B": "Unstructured data",
+        "C": "Graph data",
+        "D": "Time-series structured data"
+      },
+      "correct_answer": "B",
+      "rationale": "Raw text from emails is unstructured. While metadata (like sender/date) might be structured, the body itself is unstructured text."
+    },
+    {
+      "id": "A-6",
+      "domain": "Domain 1",
+      "topic": "Describe ways to represent data",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "An application requires a data store to map relationships between thousands of users, their purchased products, and the stores they visited. The relationships themselves contain properties (e.g., \"purchased_on_date\"). Which data representation best handles this scenario?",
+      "options": {
+        "A": "Relational tables with no foreign keys",
+        "B": "Graph data representation",
+        "C": "Flat file unstructured data",
+        "D": "Columnar structured data"
+      },
+      "correct_answer": "B",
+      "rationale": "Graph representation is designed to highlight and query relationships (edges) and entities (nodes), which is perfect for complex interconnected networks like user-product-store mappings."
+    },
+    {
+      "id": "A-7",
+      "domain": "Domain 1",
+      "topic": "Identify options for data storage",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which file format stores data in a columnar format and is highly optimized for analytical read-heavy workloads?",
+      "options": {
+        "A": "CSV",
+        "B": "Parquet",
+        "C": "JSON",
+        "D": "TXT"
+      },
+      "correct_answer": "B",
+      "rationale": "Parquet is a columnar storage file format highly optimized for analytical querying and compression."
+    },
+    {
+      "id": "A-8",
+      "domain": "Domain 1",
+      "topic": "Identify options for data storage",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which file format stores data as plain text with values separated by commas?",
+      "options": {
+        "A": "Parquet",
+        "B": "ORC",
+        "C": "Avro",
+        "D": "CSV"
+      },
+      "correct_answer": "D",
+      "rationale": "Comma-Separated Values (CSV) is a flat text format where each line is a data record."
+    },
+    {
+      "id": "A-9",
+      "domain": "Domain 1",
+      "topic": "Identify options for data storage",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "How does an analytical data store (like a Data Warehouse) differ from a transactional database?",
+      "options": {
+        "A": "Analytical stores are optimized for rapid, single-row updates.",
+        "B": "Analytical stores denormalize data to optimize complex, read-heavy queries.",
+        "C": "Analytical stores strictly enforce high-level normalization to save storage space.",
+        "D": "Analytical stores are only capable of storing unstructured video files."
+      },
+      "correct_answer": "B",
+      "rationale": "Analytical stores often use denormalized schemas (like star schemas) to make reading and aggregating large amounts of data faster."
+    },
+    {
+      "id": "A-10",
+      "domain": "Domain 1",
+      "topic": "Identify options for data storage",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "You need a storage option that allows you to store semi-structured documents and query them using a flexible schema. Which type of database is most appropriate?",
+      "options": {
+        "A": "Relational database",
+        "B": "Document database",
+        "C": "Flat file database",
+        "D": "Graph database"
+      },
+      "correct_answer": "B",
+      "rationale": "Document databases (a type of NoSQL store) are designed to store and query semi-structured data like JSON documents."
+    },
+    {
+      "id": "A-11",
+      "domain": "Domain 1",
+      "topic": "Identify options for data storage",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "You are exporting a large dataset from an on-premises system to Azure. The downstream analytics engine requires a row-based format that retains schema information within the file for data serialization. Which format should you choose?",
+      "options": {
+        "A": "Parquet",
+        "B": "CSV",
+        "C": "Avro",
+        "D": "JSON"
+      },
+      "correct_answer": "C",
+      "rationale": "Avro is a row-based storage format that includes the schema defined in JSON, making it excellent for serialization and write-heavy operations."
+    },
+    {
+      "id": "A-12",
+      "domain": "Domain 1",
+      "topic": "Identify options for data storage",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A data engineering team is designing a data lakehouse in Microsoft Fabric. They need to choose a file format that provides the fastest read performance for aggregating numerical columns across millions of rows, while supporting schema evolution. Which file format and architecture concept applies here?",
+      "options": {
+        "A": "Avro format over a relational database",
+        "B": "Parquet format in a Delta Lake architecture",
+        "C": "CSV format in a transactional database",
+        "D": "JSON format in a graph database"
+      },
+      "correct_answer": "B",
+      "rationale": "Parquet is columnar (ideal for aggregating columns). Delta Lake (used in Fabric Lakehouses) extends Parquet with transaction logging and schema evolution."
+    },
+    {
+      "id": "A-13",
+      "domain": "Domain 1",
+      "topic": "Describe common data workloads",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "What does the acronym OLTP stand for in data workloads?",
+      "options": {
+        "A": "Online Transaction Processing",
+        "B": "Online Analytical Processing",
+        "C": "Offline Transaction Processing",
+        "D": "Online Table Processing"
+      },
+      "correct_answer": "A",
+      "rationale": "OLTP stands for Online Transaction Processing, representing systems optimized for rapid, operational data changes."
+    },
+    {
+      "id": "A-14",
+      "domain": "Domain 1",
+      "topic": "Describe common data workloads",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which workload is optimized for aggregating millions of rows to generate business intelligence reports?",
+      "options": {
+        "A": "OLTP",
+        "B": "OLAP",
+        "C": "Streaming ingestion",
+        "D": "Graph processing"
+      },
+      "correct_answer": "B",
+      "rationale": "Online Analytical Processing (OLAP) is optimized for complex queries and reporting over large volumes of historical data."
+    },
+    {
+      "id": "A-15",
+      "domain": "Domain 1",
+      "topic": "Describe common data workloads",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "Which characteristic is a hallmark of an OLTP workload?",
+      "options": {
+        "A": "Heavy use of denormalized tables",
+        "B": "Infrequent, large-volume batch updates",
+        "C": "High volume of simple read, write, and update operations",
+        "D": "Focus on historical data analysis rather than current state"
+      },
+      "correct_answer": "C",
+      "rationale": "OLTP systems handle high volumes of fast, short transactions (insert, update, delete) to support day-to-day operations."
+    },
+    {
+      "id": "A-16",
+      "domain": "Domain 1",
+      "topic": "Describe common data workloads",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "In an OLAP workload, how is data typically ingested from operational systems?",
+      "options": {
+        "A": "Via single-row inserts from end-user applications in real-time",
+        "B": "Via periodic Extract, Transform, and Load (ETL) batch processes",
+        "C": "By connecting end-users directly to the OLAP database to manually input data",
+        "D": "By writing raw video files directly into a relational table"
+      },
+      "correct_answer": "B",
+      "rationale": "OLAP systems usually ingest data from OLTP systems using batch or micro-batch ETL/ELT processes."
+    },
+    {
+      "id": "A-17",
+      "domain": "Domain 1",
+      "topic": "Describe common data workloads",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "An e-commerce website needs a database to record customer orders as they happen. The database must lock records briefly to ensure inventory isn't double-sold. Which workload type is this?",
+      "options": {
+        "A": "OLAP",
+        "B": "Batch Analytics",
+        "C": "OLTP",
+        "D": "Data warehousing"
+      },
+      "correct_answer": "C",
+      "rationale": "Recording orders and enforcing transactional integrity (locking) are core requirements of an OLTP workload."
+    },
+    {
+      "id": "A-18",
+      "domain": "Domain 1",
+      "topic": "Describe common data workloads",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A retail bank uses an application that inserts a new record every time a customer makes an ATM withdrawal. At the end of the month, a separate system aggregates all withdrawals over the last five years to identify seasonal cash-flow trends. How should these two systems be categorized?",
+      "options": {
+        "A": "The ATM application is OLAP; the aggregation system is OLTP.",
+        "B": "Both systems require OLAP architectures due to the financial data.",
+        "C": "The ATM application is OLTP; the aggregation system is OLAP.",
+        "D": "Both systems require OLTP architectures for compliance tracking."
+      },
+      "correct_answer": "C",
+      "rationale": "The ATM app handles operational, point-in-time transactions (OLTP). The aggregation system analyzes historical data for trends (OLAP)."
+    },
+    {
+      "id": "A-19",
+      "domain": "Domain 1",
+      "topic": "Describe common data workloads",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A logistics company is migrating a legacy reporting system. The current system runs analytical queries directly on the operational SQL database, causing severe performance degradation for warehouse workers scanning packages. Which architectural change resolves this issue while separating workloads correctly?",
+      "options": {
+        "A": "Index all columns in the operational database to speed up analytical queries.",
+        "B": "Implement an ETL pipeline to move data to a dedicated OLAP store for reporting.",
+        "C": "Migrate the operational database from SQL to a flat CSV file for faster scanning.",
+        "D": "Change the reporting queries to run during business hours only."
+      },
+      "correct_answer": "B",
+      "rationale": "Decoupling the workloads by moving analytical queries to a dedicated OLAP store prevents resource contention on the OLTP database."
+    },
+    {
+      "id": "A-20",
+      "domain": "Domain 1",
+      "topic": "Identify roles and responsibilities for data workloads",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which data professional is primarily responsible for creating dashboards and visualizing data to help the business make decisions?",
+      "options": {
+        "A": "Database Administrator",
+        "B": "Data Engineer",
+        "C": "Data Analyst",
+        "D": "Software Developer"
+      },
+      "correct_answer": "C",
+      "rationale": "Data Analysts focus on exploring data, identifying trends, and creating reports and visualizations."
+    },
+    {
+      "id": "A-21",
+      "domain": "Domain 1",
+      "topic": "Identify roles and responsibilities for data workloads",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which role is typically responsible for setting up data pipelines and moving data from source systems into a data lake?",
+      "options": {
+        "A": "Data Engineer",
+        "B": "Database Administrator",
+        "C": "Data Analyst",
+        "D": "Business User"
+      },
+      "correct_answer": "A",
+      "rationale": "Data Engineers design, build, and maintain data pipelines and the overall data architecture (ETL/ELT)."
+    },
+    {
+      "id": "A-22",
+      "domain": "Domain 1",
+      "topic": "Identify roles and responsibilities for data workloads",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "What is a core responsibility of a Database Administrator (DBA)?",
+      "options": {
+        "A": "Designing machine learning models for predictive analytics",
+        "B": "Ensuring the security, availability, and backup of operational databases",
+        "C": "Creating Power BI reports for the marketing team",
+        "D": "Transforming unstructured data into semi-structured JSON files"
+      },
+      "correct_answer": "B",
+      "rationale": "DBAs manage the health, security, backup, and performance tuning of database systems."
+    },
+    {
+      "id": "A-23",
+      "domain": "Domain 1",
+      "topic": "Identify roles and responsibilities for data workloads",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "A company wants to transform raw telemetry data using Apache Spark before loading it into a Microsoft Fabric Lakehouse. Which role is best suited for writing these transformation scripts?",
+      "options": {
+        "A": "Data Analyst",
+        "B": "Data Engineer",
+        "C": "Database Administrator",
+        "D": "IT Support Specialist"
+      },
+      "correct_answer": "B",
+      "rationale": "Data Engineers use tools like Apache Spark to transform data at scale and manage ingestion into lakehouses or warehouses."
+    },
+    {
+      "id": "A-24",
+      "domain": "Domain 1",
+      "topic": "Identify roles and responsibilities for data workloads",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "A business manager requests a new automated alert when monthly sales drop below a certain threshold. The underlying data model is already built and clean. Who should configure this alert and visual report?",
+      "options": {
+        "A": "Database Administrator",
+        "B": "Data Engineer",
+        "C": "Data Analyst",
+        "D": "Network Administrator"
+      },
+      "correct_answer": "C",
+      "rationale": "Building alerts on existing data models and creating visual reports are tasks for a Data Analyst using tools like Power BI."
+    },
+    {
+      "id": "A-25",
+      "domain": "Domain 1",
+      "topic": "Identify roles and responsibilities for data workloads",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A retail organization experiences a data breach due to misconfigured access controls on a production SQL database. Following the incident, the CIO mandates that a specific role must audit user permissions, enforce firewall rules on the database, and configure point-in-time restore policies. Which role must take ownership of these tasks?",
+      "options": {
+        "A": "Data Analyst",
+        "B": "Data Engineer",
+        "C": "Database Administrator",
+        "D": "System Architect"
+      },
+      "correct_answer": "C",
+      "rationale": "The DBA is strictly responsible for the operational management, security configurations, and disaster recovery (backups/restores) of the database systems."
+    },
+    {
+      "id": "A-26",
+      "domain": "Domain 1",
+      "topic": "Describe ways to represent data",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "You have a dataset consisting of images of handwritten receipts and need to extract the text. Before the text is extracted, how is the raw image data categorized?",
+      "options": {
+        "A": "Structured",
+        "B": "Semi-structured",
+        "C": "Unstructured",
+        "D": "Tabular"
+      },
+      "correct_answer": "C",
+      "rationale": "Image files do not have a built-in schema or key-value pairs representing their visual content; they are unstructured."
+    },
+    {
+      "id": "A-27",
+      "domain": "Domain 1",
+      "topic": "Describe common data workloads",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "Which database schema type is most commonly associated with OLAP workloads to facilitate simple and fast aggregations?",
+      "options": {
+        "A": "Third Normal Form (3NF)",
+        "B": "Star schema",
+        "C": "Flat file schema",
+        "D": "Graph schema"
+      },
+      "correct_answer": "B",
+      "rationale": "A star schema centralizes fact tables surrounded by dimension tables, optimizing read performance for OLAP workloads."
+    },
+    {
+      "id": "A-28",
+      "domain": "Domain 1",
+      "topic": "Identify options for data storage",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "You are designing a data storage solution for a medical research facility. The application needs to store patient records containing a highly variable number of test results per patient. Complex SQL joins are rarely used, but retrieving a single patient's complete document rapidly is critical. Which storage model fits this need best?",
+      "options": {
+        "A": "Relational database using high normalization",
+        "B": "Document database",
+        "C": "Columnar file format like Parquet",
+        "D": "Flat CSV files stored in a data lake"
+      },
+      "correct_answer": "B",
+      "rationale": "Document databases group related, variably-structured data into a single document, enabling rapid retrieval of an entire entity without complex joins."
+    },
+    {
+      "id": "B-1",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "In a relational database, what is used to uniquely identify each row in a table?",
+      "options": {
+        "A": "Foreign key",
+        "B": "Index",
+        "C": "Primary key",
+        "D": "View"
+      },
+      "correct_answer": "C",
+      "rationale": "A primary key is a column (or set of columns) that uniquely identifies each row in a relational table."
+    },
+    {
+      "id": "B-2",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which SQL statement is used to retrieve data from a relational table?",
+      "options": {
+        "A": "INSERT",
+        "B": "UPDATE",
+        "C": "SELECT",
+        "D": "CREATE"
+      },
+      "correct_answer": "C",
+      "rationale": "The SELECT statement is the standard Data Manipulation Language (DML) command used to query and retrieve data."
+    },
+    {
+      "id": "B-3",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which SQL command is classified as a Data Definition Language (DDL) statement?",
+      "options": {
+        "A": "DELETE",
+        "B": "CREATE",
+        "C": "INSERT",
+        "D": "UPDATE"
+      },
+      "correct_answer": "B",
+      "rationale": "DDL statements define or alter database structures. CREATE is used to make new tables or databases."
+    },
+    {
+      "id": "B-4",
+      "domain": "Domain 2",
+      "topic": "Describe relational Azure data services",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which Azure service provides a fully managed, PaaS relational database that automatically scales and runs the latest stable version of the SQL Server database engine?",
+      "options": {
+        "A": "SQL Server on Azure Virtual Machines",
+        "B": "Azure SQL Database",
+        "C": "Azure Cosmos DB",
+        "D": "Azure Blob Storage"
+      },
+      "correct_answer": "B",
+      "rationale": "Azure SQL Database is a fully managed Platform-as-a-Service (PaaS) database engine that handles upgrading, patching, and backups automatically."
+    },
+    {
+      "id": "B-5",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "What is the primary purpose of database normalization?",
+      "options": {
+        "A": "To duplicate data across tables for faster reading",
+        "B": "To reduce data redundancy and improve data integrity",
+        "C": "To convert structured data into semi-structured JSON formats",
+        "D": "To ensure all tables contain at least one unstructured column"
+      },
+      "correct_answer": "B",
+      "rationale": "Normalization is the process of organizing data in a database to reduce redundancy and ensure logical data dependencies."
+    },
+    {
+      "id": "B-6",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "In a relational database, what defines the relationship between two tables?",
+      "options": {
+        "A": "A primary key in one table linked to a foreign key in another table",
+        "B": "Two tables having the exact same number of rows",
+        "C": "An index applied to the largest column in both tables",
+        "D": "A view that contains columns from only one table"
+      },
+      "correct_answer": "A",
+      "rationale": "Relationships in relational databases are enforced by linking a foreign key in the child table to the primary key in the parent table."
+    },
+    {
+      "id": "B-7",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "What is a database view?",
+      "options": {
+        "A": "A physical copy of data stored on a separate disk",
+        "B": "A virtual table based on the result-set of an underlying SQL query",
+        "C": "A backup file generated by a DDL command",
+        "D": "A mandatory index applied to all numeric columns"
+      },
+      "correct_answer": "B",
+      "rationale": "A view does not store data itself; it is a saved SQL query that acts as a virtual table representing data from one or more actual tables."
+    },
+    {
+      "id": "B-8",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "A developer issues the command UPDATE Employees SET Salary = 50000 WHERE Department = 'Sales';. What type of operation is this?",
+      "options": {
+        "A": "Data Definition Language (DDL)",
+        "B": "Data Manipulation Language (DML)",
+        "C": "Data Control Language (DCL)",
+        "D": "Data Query Language (DQL)"
+      },
+      "correct_answer": "B",
+      "rationale": "UPDATE modifies existing data within a table, which is a Data Manipulation Language (DML) action."
+    },
+    {
+      "id": "B-9",
+      "domain": "Domain 2",
+      "topic": "Describe relational Azure data services",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "You need to migrate an on-premises SQL Server to Azure. You require full control over the operating system, including the ability to install custom third-party agents. Which Azure service should you choose?",
+      "options": {
+        "A": "Azure SQL Database",
+        "B": "Azure SQL Managed Instance",
+        "C": "SQL Server on Azure Virtual Machines",
+        "D": "Azure Database for PostgreSQL"
+      },
+      "correct_answer": "C",
+      "rationale": "SQL Server on Azure VMs is an IaaS offering that provides full OS-level access, unlike PaaS offerings like Azure SQL Database."
+    },
+    {
+      "id": "B-10",
+      "domain": "Domain 2",
+      "topic": "Describe relational Azure data services",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "Your organization relies heavily on SQL Server Agent jobs and Service Broker. You want to migrate to a fully managed Azure PaaS service without rewriting your applications. Which service is the best fit?",
+      "options": {
+        "A": "Azure SQL Database",
+        "B": "Azure SQL Managed Instance",
+        "C": "SQL Server on Azure Virtual Machines",
+        "D": "Microsoft Fabric Warehouse"
+      },
+      "correct_answer": "B",
+      "rationale": "Azure SQL Managed Instance provides near 100% compatibility with on-premises SQL Server (including SQL Agent and Service Broker) while offering the benefits of PaaS."
+    },
+    {
+      "id": "B-11",
+      "domain": "Domain 2",
+      "topic": "Describe relational Azure data services",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "A startup uses an open-source technology stack and wants to host a relational database on Azure. They need a fully managed service that supports the MySQL community edition. Which service should they deploy?",
+      "options": {
+        "A": "Azure SQL Database",
+        "B": "Azure Database for MySQL",
+        "C": "Azure Cosmos DB for Apache Cassandra",
+        "D": "Microsoft Fabric Lakehouse"
+      },
+      "correct_answer": "B",
+      "rationale": "Azure Database for MySQL is a fully managed database service based on the community edition of MySQL."
+    },
+    {
+      "id": "B-12",
+      "domain": "Domain 2",
+      "topic": "Describe relational Azure data services",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "You are deploying a web application backed by a relational database. Your application experiences unpredictable spikes in traffic, and you want the database engine to automatically pause during inactive periods to save costs. Which Azure SQL Database tier should you choose?",
+      "options": {
+        "A": "Provisioned Compute",
+        "B": "Serverless Compute",
+        "C": "Hyperscale",
+        "D": "Business Critical"
+      },
+      "correct_answer": "B",
+      "rationale": "The Serverless compute tier automatically scales compute resources based on workload demand and can pause databases during periods of inactivity."
+    },
+    {
+      "id": "B-13",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A database has a 'Customers' table and an 'Orders' table. The 'Orders' table contains a 'CustomerID' column. If referential integrity is strictly enforced, what happens if an administrator attempts to delete a customer record that has corresponding orders?",
+      "options": {
+        "A": "The customer is deleted, and the orders remain unchanged.",
+        "B": "The database engine prevents the deletion of the customer record.",
+        "C": "The orders are moved to an unstructured data lake.",
+        "D": "The database automatically converts the relational tables to document format."
+      },
+      "correct_answer": "B",
+      "rationale": "Referential integrity ensures that relationships remain consistent. You cannot delete a primary key record (Customer) if a foreign key (Order) relies on it, unless cascading deletes are configured (which prevents orphaned records either way)."
+    },
+    {
+      "id": "B-14",
+      "domain": "Domain 2",
+      "topic": "Describe relational Azure data services",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "An IoT startup is designing a system to capture temperature telemetry from 100,000 sensors globally. The data arrives at unpredictable rates, has a varying schema depending on sensor type, and requires sub-millisecond write latencies. A data engineer proposes using Azure SQL Database. Why is this choice suboptimal compared to an alternative?",
+      "options": {
+        "A": "Azure SQL Database cannot handle high write volumes, so Azure Blob Storage should be used.",
+        "B": "The varying schema and extreme write latency requirements are better suited for Azure Cosmos DB for NoSQL.",
+        "C": "Azure SQL Database only supports unstructured media files, not telemetry data.",
+        "D": "Telemetry data must be stored in SQL Server on Azure VMs to meet compliance."
+      },
+      "correct_answer": "B",
+      "rationale": "Relational databases struggle with rapidly changing schemas and massive, unpredictable sub-millisecond write spikes. A NoSQL store like Cosmos DB is designed exactly for this access pattern and data shape."
+    },
+    {
+      "id": "B-15",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which database object acts as a structured container that enforces data types on specific fields and stores the actual data rows?",
+      "options": {
+        "A": "View",
+        "B": "Stored Procedure",
+        "C": "Table",
+        "D": "Index"
+      },
+      "correct_answer": "C",
+      "rationale": "A table is the fundamental object in a relational database that physically stores data in rows and columns with enforced data types."
+    },
+    {
+      "id": "B-16",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which SQL clause is used to filter the results of a SELECT query?",
+      "options": {
+        "A": "ORDER BY",
+        "B": "WHERE",
+        "C": "GROUP BY",
+        "D": "INSERT INTO"
+      },
+      "correct_answer": "B",
+      "rationale": "The WHERE clause applies conditions to a query to filter out rows that do not meet the specified criteria."
+    },
+    {
+      "id": "B-17",
+      "domain": "Domain 2",
+      "topic": "Describe relational Azure data services",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "Which Azure service provides a fully managed PostgreSQL database that natively handles high availability and automated backups?",
+      "options": {
+        "A": "SQL Server on Azure VMs",
+        "B": "Azure Cosmos DB for Table",
+        "C": "Azure Database for PostgreSQL",
+        "D": "Azure Data Lake Storage"
+      },
+      "correct_answer": "C",
+      "rationale": "Azure Database for PostgreSQL is the managed PaaS offering for PostgreSQL workloads on Azure."
+    },
+    {
+      "id": "B-18",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "You write the following SQL statement: CREATE TABLE Inventory (ItemID INT PRIMARY KEY, ItemName VARCHAR(50));. What is the result of running this statement?",
+      "options": {
+        "A": "A new row is inserted into the Inventory table.",
+        "B": "The structure of an existing table is modified.",
+        "C": "A new data structure is defined and created in the database.",
+        "D": "All data within the Inventory table is deleted."
+      },
+      "correct_answer": "C",
+      "rationale": "CREATE TABLE is a DDL command that defines and instantiates a new table object in the database."
+    },
+    {
+      "id": "B-19",
+      "domain": "Domain 2",
+      "topic": "Describe relational Azure data services",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "You need to deploy a relational database to Azure that can scale storage up to 100 TB and allows rapid scale-out of read-only replicas. Which Azure SQL Database deployment tier is specifically architected for this?",
+      "options": {
+        "A": "General Purpose",
+        "B": "Hyperscale",
+        "C": "Basic",
+        "D": "Serverless"
+      },
+      "correct_answer": "B",
+      "rationale": "Azure SQL Database Hyperscale tier provides highly scalable storage (up to 100 TB) and fast compute scaling, separated from the storage layer."
+    },
+    {
+      "id": "B-20",
+      "domain": "Domain 2",
+      "topic": "Describe relational Azure data services",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A company runs a legacy web app backed by an on-premises SQL Server 2012 instance. The application requires cross-database queries and relies on SQL Server Reporting Services (SSRS) installed on the same server. The company wants to migrate to Azure, minimize maintenance overhead, but ensure full compatibility without code changes. Which deployment option is required?",
+      "options": {
+        "A": "Azure SQL Database",
+        "B": "SQL Server on Azure Virtual Machines",
+        "C": "Azure Database for MySQL",
+        "D": "Azure Synapse Analytics"
+      },
+      "correct_answer": "B",
+      "rationale": "Because the scenario requires SSRS installed on the same server, an IaaS solution (SQL Server on Azure VMs) is required. PaaS services (like Azure SQL Database or Managed Instance) do not host the SSRS engine internally."
+    },
+    {
+      "id": "B-21",
+      "domain": "Domain 2",
+      "topic": "Describe relational Azure data services",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "An enterprise is migrating an on-premises PostgreSQL database to Azure. They have strict compliance requirements stating that their database traffic must not traverse the public internet and must be integrated into their Azure Virtual Network. Which configuration of Azure Database for PostgreSQL fulfills this requirement?",
+      "options": {
+        "A": "Deploy the service using public IP addresses with server-level firewall rules.",
+        "B": "Deploy the service using Azure Private Link / Private Endpoint.",
+        "C": "Deploy the service and configure Cross-Origin Resource Sharing (CORS).",
+        "D": "Deploy the data as JSON files into an Azure Blob Storage container."
+      },
+      "correct_answer": "B",
+      "rationale": "Azure Private Link enables accessing PaaS services (like PostgreSQL) over a private endpoint within the VNet, keeping traffic off the public internet."
+    },
+    {
+      "id": "B-22",
+      "domain": "Domain 2",
+      "topic": "Describe relational Azure data services",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A financial services firm is building a core banking system. The system must enforce strict ACID transactions, guarantee that account balances are updated synchronously, and relate complex entities (customers, accounts, loans, transaction history) using highly normalized schemas. A developer suggests using Azure Table Storage to save costs. Why is this a poor architectural decision?",
+      "options": {
+        "A": "Azure Table Storage is designed for unstructured media files, not textual financial data.",
+        "B": "Azure Table Storage does not support complex relational joins or strict multi-record ACID transactions natively.",
+        "C": "Azure Table Storage only supports real-time streaming ingestion, not batch updates.",
+        "D": "Azure Table Storage cannot hold more than 1 GB of data."
+      },
+      "correct_answer": "B",
+      "rationale": "A core banking system requires complex joins and strict relational ACID compliance across multiple tables. Table Storage (a NoSQL key-value store) does not natively support complex relational schemas or multi-entity transactions."
+    },
+    {
+      "id": "B-23",
+      "domain": "Domain 2",
+      "topic": "Describe relational concepts",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which SQL keyword is used to sort the results returned by a SELECT query?",
+      "options": {
+        "A": "GROUP BY",
+        "B": "WHERE",
+        "C": "ORDER BY",
+        "D": "SORT ASC"
+      },
+      "correct_answer": "C",
+      "rationale": "ORDER BY is the SQL keyword used to sort the result set in ascending or descending order."
+    },
+    {
+      "id": "C-1",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities of Azure storage",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which Azure Storage service is optimized for storing massive amounts of unstructured data, such as video files and raw images?",
+      "options": {
+        "A": "Azure Table Storage",
+        "B": "Azure Blob Storage",
+        "C": "Azure File Storage",
+        "D": "Azure SQL Database"
+      },
+      "correct_answer": "B",
+      "rationale": "Azure Blob Storage is Microsoft's object storage solution for the cloud, optimized for storing massive amounts of unstructured data."
+    },
+    {
+      "id": "C-2",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities of Azure storage",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which Azure Storage service provides fully managed file shares in the cloud that are accessible via the industry standard Server Message Block (SMB) protocol?",
+      "options": {
+        "A": "Azure Blob Storage",
+        "B": "Azure File Storage",
+        "C": "Azure Table Storage",
+        "D": "Azure Data Lake Storage Gen2"
+      },
+      "correct_answer": "B",
+      "rationale": "Azure Files offers fully managed file shares that can be mounted concurrently by cloud or on-premises deployments using SMB or NFS."
+    },
+    {
+      "id": "C-3",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities and features of Azure Cosmos DB",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which Azure service is a fully managed, highly scalable NoSQL database designed for single-digit millisecond response times globally?",
+      "options": {
+        "A": "Azure SQL Database",
+        "B": "Microsoft Fabric Warehouse",
+        "C": "Azure Cosmos DB",
+        "D": "Azure Database for MySQL"
+      },
+      "correct_answer": "C",
+      "rationale": "Azure Cosmos DB is Microsoft's globally distributed, multi-model NoSQL database service known for low latency and high scalability."
+    },
+    {
+      "id": "C-4",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities of Azure storage",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "How does Azure Data Lake Storage Gen2 differ fundamentally from standard Azure Blob Storage?",
+      "options": {
+        "A": "It stores data exclusively in a relational, tabular format.",
+        "B": "It implements a hierarchical namespace that organizes objects into directories and subdirectories.",
+        "C": "It cannot store unstructured data like images.",
+        "D": "It uses the SMB protocol for mounting drives on Windows machines."
+      },
+      "correct_answer": "B",
+      "rationale": "ADLS Gen2 builds on Blob Storage by adding a hierarchical namespace, which vastly improves performance for big data analytics by allowing directory-level operations."
+    },
+    {
+      "id": "C-5",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities of Azure storage",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "You need a cost-effective Azure storage solution to store millions of simple key-value pairs representing application configuration settings. Complex querying is not required. Which service is best suited?",
+      "options": {
+        "A": "Azure Table Storage",
+        "B": "Azure SQL Managed Instance",
+        "C": "Azure Data Lake Storage Gen2",
+        "D": "Azure File Storage"
+      },
+      "correct_answer": "A",
+      "rationale": "Azure Table Storage provides a highly available, hugely scalable store for structured non-relational (key-value/wide-column) data at a low cost."
+    },
+    {
+      "id": "C-6",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities of Azure storage",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "A company has an on-premises application that writes log files to a local network drive mapped as 'Z:'. They are migrating the application to Azure VMs and want to map a cloud drive exactly the same way. Which service should they use?",
+      "options": {
+        "A": "Azure Blob Storage",
+        "B": "Azure File Storage",
+        "C": "Azure Data Lake Storage Gen2",
+        "D": "Azure Cosmos DB"
+      },
+      "correct_answer": "B",
+      "rationale": "Azure Files supports SMB, allowing Azure VMs (and on-premises machines) to mount the storage as a standard network drive."
+    },
+    {
+      "id": "C-7",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities and features of Azure Cosmos DB",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "Your team is migrating an application that currently uses MongoDB. You want to move to a fully managed Azure service with minimal code changes to the application's data access layer. Which service should you select?",
+      "options": {
+        "A": "Azure Cosmos DB for MongoDB",
+        "B": "Azure Database for PostgreSQL",
+        "C": "Azure Cosmos DB for NoSQL",
+        "D": "Azure Blob Storage"
+      },
+      "correct_answer": "A",
+      "rationale": "Azure Cosmos DB for MongoDB provides wire-protocol compatibility, allowing existing MongoDB drivers and applications to connect to Cosmos DB seamlessly."
+    },
+    {
+      "id": "C-8",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities and features of Azure Cosmos DB",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "An application needs to store and traverse complex relationship networks between users, their devices, and geographic locations. Which Azure Cosmos DB API is specifically designed to query these relationships using edges and vertices?",
+      "options": {
+        "A": "Azure Cosmos DB for Table",
+        "B": "Azure Cosmos DB for Apache Gremlin",
+        "C": "Azure Cosmos DB for Apache Cassandra",
+        "D": "Azure Cosmos DB for NoSQL"
+      },
+      "correct_answer": "B",
+      "rationale": "The Gremlin API provides graph database capabilities, utilizing nodes (vertices) and relationships (edges) for complex traversal queries."
+    },
+    {
+      "id": "C-9",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities of Azure storage",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A media company archives petabytes of high-definition video footage. The videos are rarely accessed, but when they are, retrieval must begin within an hour. They require the lowest-cost tier for storage. Which configuration should they use?",
+      "options": {
+        "A": "Azure Blob Storage in the Hot tier",
+        "B": "Azure Blob Storage in the Archive tier",
+        "C": "Azure File Storage using Premium SSDs",
+        "D": "Azure Data Lake Storage Gen2 in the Hot tier"
+      },
+      "correct_answer": "B",
+      "rationale": "The Archive tier offers the lowest storage costs for data that is rarely accessed. Rehydration (retrieval) takes time, but it meets the \"within an hour\" requirement (Standard rehydration can take up to 15 hours, but High Priority takes under an hour)."
+    },
+    {
+      "id": "C-10",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities and features of Azure Cosmos DB",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which Azure Cosmos DB API is the native option designed for managing document data and querying it using SQL-like syntax?",
+      "options": {
+        "A": "Azure Cosmos DB for MongoDB",
+        "B": "Azure Cosmos DB for Table",
+        "C": "Azure Cosmos DB for NoSQL",
+        "D": "Azure Cosmos DB for Apache Cassandra"
+      },
+      "correct_answer": "C",
+      "rationale": "Azure Cosmos DB for NoSQL is the native API. It stores data in JSON document format and allows querying using a SQL-like dialect."
+    },
+    {
+      "id": "C-11",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities of Azure storage",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "What is the primary advantage of the hierarchical namespace in Azure Data Lake Storage Gen2 when performing analytics?",
+      "options": {
+        "A": "It automatically converts CSV files into relational tables.",
+        "B": "It allows renaming or deleting a directory as a single atomic operation.",
+        "C": "It allows users to write SQL UPDATE statements directly against text files.",
+        "D": "It compresses video files to zero bytes to save storage costs."
+      },
+      "correct_answer": "B",
+      "rationale": "In flat blob storage, renaming a folder requires copying and deleting every file inside it. A hierarchical namespace treats directories as actual objects, making folder operations atomic and much faster."
+    },
+    {
+      "id": "C-12",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities and features of Azure Cosmos DB",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "A development team wants to use the Cassandra query language (CQL) to interact with a highly available database in Azure, avoiding the overhead of managing the underlying servers. Which API should they use?",
+      "options": {
+        "A": "Azure Cosmos DB for Apache Cassandra",
+        "B": "Azure Cosmos DB for NoSQL",
+        "C": "Azure SQL Database",
+        "D": "Azure Cosmos DB for Apache Gremlin"
+      },
+      "correct_answer": "A",
+      "rationale": "The Cassandra API allows applications written for Apache Cassandra to use Cosmos DB as a fully managed backend."
+    },
+    {
+      "id": "C-13",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities of Azure storage",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "You need to store small images (thumbnails) for a web application so they can be served directly to a user's browser over HTTP. Which storage service is the most appropriate?",
+      "options": {
+        "A": "Azure Table Storage",
+        "B": "Azure Blob Storage",
+        "C": "Azure SQL Managed Instance",
+        "D": "Microsoft Fabric Warehouse"
+      },
+      "correct_answer": "B",
+      "rationale": "Azure Blob Storage is ideal for storing objects (like images) and serving them directly to web clients via HTTP/HTTPS."
+    },
+    {
+      "id": "C-14",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities of Azure storage",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "An enterprise relies heavily on Azure Table Storage but is experiencing performance bottlenecks due to massive global user growth. They want to migrate to a service offering single-digit millisecond latency, turnkey global distribution, and full compatibility with their existing Table Storage code. Which service should they choose?",
+      "options": {
+        "A": "Azure Cosmos DB for Table",
+        "B": "Azure Data Lake Storage Gen2",
+        "C": "Azure SQL Database",
+        "D": "Azure Blob Storage"
+      },
+      "correct_answer": "A",
+      "rationale": "Azure Cosmos DB for Table offers the exact API compatibility as standard Azure Table Storage but adds premium features like global distribution, guaranteed low latency, and automatic secondary indexes."
+    },
+    {
+      "id": "C-15",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities and features of Azure Cosmos DB",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "An application requires strong consistency where every read is guaranteed to return the most recent write. It also requires the database to be globally distributed. How does Azure Cosmos DB handle this requirement?",
+      "options": {
+        "A": "Cosmos DB cannot be globally distributed; it is restricted to a single region.",
+        "B": "Cosmos DB only supports Eventual consistency, so the requirement cannot be met.",
+        "C": "Cosmos DB offers configurable consistency levels, allowing developers to choose Strong consistency to meet this requirement.",
+        "D": "Cosmos DB enforces Strong consistency globally by default, but it disables write operations during network latency."
+      },
+      "correct_answer": "C",
+      "rationale": "A core feature of Cosmos DB is its five well-defined consistency levels (Strong, Bounded Staleness, Session, Consistent Prefix, Eventual), allowing developers to trade off between consistency, availability, and performance."
+    },
+    {
+      "id": "C-16",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities and features of Azure Cosmos DB",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "In Azure Cosmos DB, what defines the logical boundary for transactions and is used to evenly distribute data across physical partitions?",
+      "options": {
+        "A": "Primary key",
+        "B": "Foreign key",
+        "C": "Partition key",
+        "D": "Index key"
+      },
+      "correct_answer": "C",
+      "rationale": "The partition key is a crucial concept in Cosmos DB. It determines how data is logically grouped and physically distributed across servers to scale."
+    },
+    {
+      "id": "C-17",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities and features of Azure Cosmos DB",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A gaming company is launching a new mobile game. Player profiles will be stored in the cloud. The profile structure will evolve constantly as new game features are added (e.g., adding \"guilds,\" \"pets,\" or \"achievements\"). Read and write volumes will be highly volatile. Which database service is the most appropriate?",
+      "options": {
+        "A": "Azure Database for PostgreSQL, because player data must be strictly relational to maintain referential integrity.",
+        "B": "Azure Cosmos DB for NoSQL, because its flexible schema easily accommodates evolving data models and it scales automatically.",
+        "C": "Azure File Storage, because profile data can be written to individual text files mapped via SMB.",
+        "D": "Azure SQL Database, because it provides native graph traversal for the \"guild\" feature."
+      },
+      "correct_answer": "B",
+      "rationale": "A rapidly evolving schema and highly volatile read/write patterns are classic indicators for a NoSQL document store. Relational databases (like PostgreSQL) would require rigid schema updates."
+    },
+    {
+      "id": "C-18",
+      "domain": "Domain 3",
+      "topic": "Describe capabilities of Azure storage",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A data science team is preparing to train machine learning models. They have 50 TB of data, which includes a mix of JSON logs, raw images, and CSV files. They need to store this data in a single location that allows Spark clusters to analyze it efficiently. Which storage solution should you recommend?",
+      "options": {
+        "A": "Azure Cosmos DB for MongoDB, because it natively stores JSON logs and images.",
+        "B": "Azure SQL Database, because it can import CSV files directly into tables.",
+        "C": "Azure Data Lake Storage Gen2, because it supports massive volumes of mixed data types and is optimized for Spark analytics.",
+        "D": "Azure File Storage, because the data scientists can map the drive to their local laptops."
+      },
+      "correct_answer": "C",
+      "rationale": "ADLS Gen2 is the premier choice for analytical data lakes. It handles structured, semi-structured, and unstructured data at scale and is natively optimized for big data engines like Spark."
+    },
+    {
+      "id": "D-1",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "What is the process of moving data from various source systems into a centralized analytical data store called?",
+      "options": {
+        "A": "Data querying",
+        "B": "Data visualization",
+        "C": "Data ingestion",
+        "D": "Data purging"
+      },
+      "correct_answer": "C",
+      "rationale": "Data ingestion is the first step in large-scale analytics, involving capturing and moving data from sources into storage."
+    },
+    {
+      "id": "D-2",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which element of large-scale analytics involves transforming raw data into a clean, structured format suitable for analysis?",
+      "options": {
+        "A": "Data processing",
+        "B": "Data visualization",
+        "C": "Data archiving",
+        "D": "Data storage"
+      },
+      "correct_answer": "A",
+      "rationale": "Data processing (or transformation) cleans, filters, and formats raw data so analysts can query it effectively."
+    },
+    {
+      "id": "D-3",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which Microsoft Fabric component combines the benefits of a data lake (flexible storage) and a data warehouse (structured SQL querying)?",
+      "options": {
+        "A": "Power BI",
+        "B": "Real-Time Intelligence",
+        "C": "Fabric Lakehouse",
+        "D": "Azure File Storage"
+      },
+      "correct_answer": "C",
+      "rationale": "A Lakehouse architecture merges the cheap, flexible storage of a data lake with the schema and transactional capabilities of a data warehouse."
+    },
+    {
+      "id": "D-4",
+      "domain": "Domain 4",
+      "topic": "Describe considerations for real-time data analytics",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which term describes data that is processed continuously as it arrives, rather than in scheduled groups?",
+      "options": {
+        "A": "Batch processing",
+        "B": "Streaming data",
+        "C": "Archival data",
+        "D": "Relational data"
+      },
+      "correct_answer": "B",
+      "rationale": "Streaming data analytics processes information in real-time or near real-time as it is generated."
+    },
+    {
+      "id": "D-5",
+      "domain": "Domain 4",
+      "topic": "Describe considerations for real-time data analytics",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which Azure service is specifically designed to run complex real-time queries on streaming data from devices and applications?",
+      "options": {
+        "A": "Azure Stream Analytics",
+        "B": "Azure SQL Database",
+        "C": "Microsoft Fabric Warehouse",
+        "D": "Azure Data Factory"
+      },
+      "correct_answer": "A",
+      "rationale": "Azure Stream Analytics is a fully managed stream processing engine designed to analyze and process large volumes of streaming data."
+    },
+    {
+      "id": "D-6",
+      "domain": "Domain 4",
+      "topic": "Describe data visualization in Microsoft Power BI",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "What is Microsoft Power BI primarily used for?",
+      "options": {
+        "A": "Backing up relational databases",
+        "B": "Creating interactive data visualizations and business intelligence reports",
+        "C": "Orchestrating complex ETL pipelines",
+        "D": "Storing unstructured video files"
+      },
+      "correct_answer": "B",
+      "rationale": "Power BI is a data visualization and reporting tool used to extract insights from data."
+    },
+    {
+      "id": "D-7",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "In an Extract, Transform, Load (ETL) pipeline, at what stage is data validated, cleaned, and aggregated?",
+      "options": {
+        "A": "Extract",
+        "B": "Transform",
+        "C": "Load",
+        "D": "Visualize"
+      },
+      "correct_answer": "B",
+      "rationale": "The Transform phase is where raw data is cleaned, mapped, and aggregated into a usable state before being loaded."
+    },
+    {
+      "id": "D-8",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "How does Microsoft Fabric differ from traditional, isolated Azure data services?",
+      "options": {
+        "A": "Fabric focuses exclusively on OLTP relational database management.",
+        "B": "Fabric provides an end-to-end, unified SaaS analytics platform that integrates data engineering, data warehousing, and Power BI.",
+        "C": "Fabric is an on-premises only software suite.",
+        "D": "Fabric restricts data storage strictly to flat CSV files."
+      },
+      "correct_answer": "B",
+      "rationale": "Microsoft Fabric is a unified SaaS platform bringing together components like Lakehouses, Data Factory, and Power BI into a single workspace."
+    },
+    {
+      "id": "D-9",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "Which open-source analytics engine is highly optimized for large-scale data processing and is a foundational component of Azure Databricks?",
+      "options": {
+        "A": "Apache Kafka",
+        "B": "Apache Spark",
+        "C": "PostgreSQL",
+        "D": "SQL Server"
+      },
+      "correct_answer": "B",
+      "rationale": "Azure Databricks is built on Apache Spark, leveraging its distributed computing power for big data processing and machine learning."
+    },
+    {
+      "id": "D-10",
+      "domain": "Domain 4",
+      "topic": "Describe considerations for real-time data analytics",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "What is a defining characteristic of batch data processing compared to streaming?",
+      "options": {
+        "A": "Batch processing handles data incrementally, row by row, as it is created.",
+        "B": "Batch processing is triggered on a schedule and processes a bounded chunk of data at once.",
+        "C": "Batch processing guarantees sub-millisecond end-to-end latency.",
+        "D": "Batch processing is only used for unstructured media files."
+      },
+      "correct_answer": "B",
+      "rationale": "Batch processing runs at scheduled intervals (e.g., nightly) processing a specific, bounded block of data collected over a period."
+    },
+    {
+      "id": "D-11",
+      "domain": "Domain 4",
+      "topic": "Describe considerations for real-time data analytics",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "A smart city project deploys sensors to measure traffic congestion. They need a dashboard that updates the traffic status every 5 seconds. Which data processing approach is required?",
+      "options": {
+        "A": "Batch processing running daily at midnight",
+        "B": "Streaming data processing",
+        "C": "Monthly ETL pipeline",
+        "D": "Offline data archiving"
+      },
+      "correct_answer": "B",
+      "rationale": "Real-time dashboards requiring updates every few seconds demand a streaming processing architecture."
+    },
+    {
+      "id": "D-12",
+      "domain": "Domain 4",
+      "topic": "Describe data visualization in Microsoft Power BI",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "In Power BI, what is the purpose of establishing relationships in a data model?",
+      "options": {
+        "A": "To enforce primary key constraints so data cannot be deleted.",
+        "B": "To link tables together so visuals can filter and aggregate data across multiple tables accurately.",
+        "C": "To automatically trigger ETL pipelines in Azure Data Factory.",
+        "D": "To convert semi-structured JSON data into unstructured blobs."
+      },
+      "correct_answer": "B",
+      "rationale": "Relationships in a Power BI data model allow the engine to understand how different tables relate, enabling cross-table filtering and slicing."
+    },
+    {
+      "id": "D-13",
+      "domain": "Domain 4",
+      "topic": "Describe data visualization in Microsoft Power BI",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "A business analyst wants to show the percentage of total sales contributed by four different regions in a single fiscal quarter. Which Power BI visualization is most appropriate?",
+      "options": {
+        "A": "Line chart",
+        "B": "Pie chart (or Donut chart)",
+        "C": "Scatter plot",
+        "D": "Card visual"
+      },
+      "correct_answer": "B",
+      "rationale": "Pie or Donut charts are ideal for displaying proportional data, showing how parts make up a whole."
+    },
+    {
+      "id": "D-14",
+      "domain": "Domain 4",
+      "topic": "Describe data visualization in Microsoft Power BI",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "An executive wants a Power BI dashboard to display the trend of company revenue over the last 12 months. Which visualization best demonstrates this trend over time?",
+      "options": {
+        "A": "Line chart",
+        "B": "Pie chart",
+        "C": "Tree map",
+        "D": "Matrix"
+      },
+      "correct_answer": "A",
+      "rationale": "Line charts are the standard and most effective visualization for showing trends across a continuous timeline."
+    },
+    {
+      "id": "D-15",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "A data engineer needs to orchestrate the movement of data from an on-premises SQL database to an Azure Data Lake on a nightly schedule. Which Azure service is designed for data integration and workflow orchestration?",
+      "options": {
+        "A": "Azure Data Factory (or Fabric Data Factory)",
+        "B": "Azure Stream Analytics",
+        "C": "Power BI",
+        "D": "Azure Cosmos DB"
+      },
+      "correct_answer": "A",
+      "rationale": "Azure Data Factory (and the Data Factory experience in Microsoft Fabric) is the cloud-based ETL and data integration service used for orchestrating automated data movement."
+    },
+    {
+      "id": "D-16",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "An organization is migrating to Microsoft Fabric. They have a team of SQL developers who are uncomfortable with Python and Spark, but they need to query large volumes of structured historical data using standard T-SQL. Which Fabric item should they use to store and analyze this data?",
+      "options": {
+        "A": "Fabric Data Factory",
+        "B": "Fabric Warehouse",
+        "C": "Fabric Real-Time Intelligence",
+        "D": "Fabric Lakehouse (Spark endpoint)"
+      },
+      "correct_answer": "B",
+      "rationale": "The Fabric Warehouse provides full T-SQL semantics and is designed for relational data warehousing, making it the perfect fit for developers relying solely on SQL."
+    },
+    {
+      "id": "D-17",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A company uses Azure Databricks to clean and transform raw data. The raw data is stored in ADLS Gen2. Once the data is transformed, it needs to be served to thousands of concurrent Power BI users with minimal latency. What is the most robust architectural pattern to achieve this?",
+      "options": {
+        "A": "Connect Power BI directly to the raw, unstructured files in ADLS Gen2.",
+        "B": "Load the transformed data from Databricks into an analytical data store (like Fabric Warehouse or Azure Synapse dedicated pool), then connect Power BI.",
+        "C": "Use Azure Stream Analytics to push the raw data directly into a Power BI real-time dashboard.",
+        "D": "Export the transformed data to CSV and email it to the Power BI users."
+      },
+      "correct_answer": "B",
+      "rationale": "Connecting BI tools directly to raw files is highly inefficient. Transformed data should be loaded into a serving layer (an analytical data store) designed to handle highly concurrent read queries from tools like Power BI."
+    },
+    {
+      "id": "D-18",
+      "domain": "Domain 4",
+      "topic": "Describe considerations for real-time data analytics",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A financial firm detects fraudulent credit card transactions. Raw transaction data arrives in an event hub. A stream analytics job reads the data, applies a fraud detection algorithm, and must immediately block the transaction. Why is batch processing fundamentally incompatible with this scenario?",
+      "options": {
+        "A": "Batch processing cannot read data from event hubs.",
+        "B": "Batch processing is inherently too expensive for fraud detection.",
+        "C": "Batch processing introduces unacceptable latency; the transaction would be approved before the batch job runs.",
+        "D": "Batch processing only works with relational databases, not streaming event hubs."
+      },
+      "correct_answer": "C",
+      "rationale": "Fraud detection requires immediate, per-event action. Batch processing runs on a delay (e.g., every hour), meaning fraudulent transactions would slip through before the data is analyzed."
+    },
+    {
+      "id": "D-19",
+      "domain": "Domain 4",
+      "topic": "Describe data visualization in Microsoft Power BI",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A Power BI data model contains a 'Sales' table with 10 million rows and a 'Date' table. A user reports that a visual showing \"Total Sales by Year\" is incredibly slow. The 'Date' table is currently not connected to the 'Sales' table in the model view, so the user created a complex DAX formula to match dates manually. How should you fix the performance issue?",
+      "options": {
+        "A": "Delete the 'Date' table and put all dates directly into the 'Sales' table as text.",
+        "B": "Create a physical relationship between the 'Date' table and the 'Sales' table in the model, and remove the complex manual DAX matching.",
+        "C": "Change the visual from a Line chart to a Pie chart.",
+        "D": "Export the data to Excel and create a pivot table."
+      },
+      "correct_answer": "B",
+      "rationale": "Establishing proper relationships in the Power BI data model leverages the highly optimized internal engine (VertiPaq) to filter and aggregate data instantly, eliminating the need for slow, complex manual row-matching in DAX."
+    },
+    {
+      "id": "D-20",
+      "domain": "Domain 4",
+      "topic": "Describe considerations for real-time data analytics",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "In Microsoft Fabric, which experience is tailored specifically for ingesting, querying, and acting on continuous data streams?",
+      "options": {
+        "A": "Fabric Real-Time Intelligence",
+        "B": "Fabric Data Engineering",
+        "C": "Fabric Data Science",
+        "D": "Power BI"
+      },
+      "correct_answer": "A",
+      "rationale": "Fabric Real-Time Intelligence (which encompasses Eventhouse and KQL databases) is designed for streaming, time-series, and telemetry data."
+    },
+    {
+      "id": "D-21",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "What is the primary function of an analytical data store in a modern data architecture?",
+      "options": {
+        "A": "To capture point-of-sale transactions in real time with high concurrency.",
+        "B": "To act as a serving layer where cleaned, aggregated data is queried by business intelligence tools.",
+        "C": "To store long-term, cold archival video files.",
+        "D": "To execute machine learning model training using GPUs."
+      },
+      "correct_answer": "B",
+      "rationale": "Analytical stores (Data Warehouses, Lakehouses) serve as the optimized layer where BI tools connect to run reports on processed data."
+    },
+    {
+      "id": "D-22",
+      "domain": "Domain 4",
+      "topic": "Describe data visualization in Microsoft Power BI",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "In Power BI, what is the term for a single screen (often called a canvas) that uses visuals to tell a story and is built by pinning visuals from various reports?",
+      "options": {
+        "A": "A Dataset",
+        "B": "A Dashboard",
+        "C": "A Dataflow",
+        "D": "A Workspace"
+      },
+      "correct_answer": "B",
+      "rationale": "A Power BI Dashboard is a single-page canvas summarizing key metrics, created by pinning visuals from one or more underlying reports."
+    },
+    {
+      "id": "D-23",
+      "domain": "Domain 4",
+      "topic": "Describe data visualization in Microsoft Power BI",
+      "difficulty": "Medium",
+      "bloom": "Apply",
+      "question": "You need to show the correlation between the amount of money spent on marketing and the number of products sold across 50 different campaigns. Which visual should you use?",
+      "options": {
+        "A": "Scatter plot",
+        "B": "Donut chart",
+        "C": "Card visual",
+        "D": "Slicer"
+      },
+      "correct_answer": "A",
+      "rationale": "Scatter plots are ideal for analyzing the relationship or correlation between two numerical variables (marketing spend vs. products sold)."
+    },
+    {
+      "id": "D-24",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "In Microsoft Fabric, what is the underlying unified storage layer that all computing workloads (Lakehouse, Warehouse, Power BI) connect to automatically?",
+      "options": {
+        "A": "OneLake",
+        "B": "Azure Cosmos DB",
+        "C": "SQL Server on Azure VMs",
+        "D": "Azure Table Storage"
+      },
+      "correct_answer": "A",
+      "rationale": "OneLake is the \"OneDrive for data\" in Microsoft Fabric; it is the single, unified, logical data lake for the entire organization."
+    },
+    {
+      "id": "D-25",
+      "domain": "Domain 4",
+      "topic": "Describe considerations for real-time data analytics",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "When configuring Azure Stream Analytics, what defines the destination where the processed streaming data is sent?",
+      "options": {
+        "A": "The Input",
+        "B": "The Query",
+        "C": "The Output",
+        "D": "The Transformation"
+      },
+      "correct_answer": "C",
+      "rationale": "A Stream Analytics job consists of three parts: Input (source), Query (transformation logic), and Output (destination, e.g., Power BI, Lakehouse)."
+    },
+    {
+      "id": "D-26",
+      "domain": "Domain 4",
+      "topic": "Describe data visualization in Microsoft Power BI",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "What is the function of a 'Slicer' in a Power BI report?",
+      "options": {
+        "A": "To compress the underlying dataset to save memory.",
+        "B": "To provide an interactive, on-canvas visual filter that users can use to narrow down data.",
+        "C": "To automatically write back data to the source database.",
+        "D": "To split a single column of text into multiple columns."
+      },
+      "correct_answer": "B",
+      "rationale": "A slicer is a type of visual filter placed directly on the report canvas, allowing end-users to interactively filter the data shown in other visuals."
+    },
+    {
+      "id": "D-27",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A data engineer creates a Microsoft Fabric Lakehouse. They ingest raw JSON files into the \"Files\" section. To allow the data analyst to query this data using a Power BI DirectLake connection, what must the data engineer do next?",
+      "options": {
+        "A": "Convert the JSON files into Delta Parquet tables in the \"Tables\" section of the Lakehouse.",
+        "B": "Copy the JSON files to a local desktop and import them manually into Power BI Desktop.",
+        "C": "Change the JSON files into MP4 format to save storage space.",
+        "D": "Move the JSON files into an Azure Cosmos DB container."
+      },
+      "correct_answer": "A",
+      "rationale": "Power BI's optimized DirectLake mode (and the SQL analytics endpoint in a Fabric Lakehouse) requires data to be stored as Delta Parquet tables, not raw JSON files."
+    },
+    {
+      "id": "D-28",
+      "domain": "Domain 4",
+      "topic": "Describe considerations for real-time data analytics",
+      "difficulty": "Hard",
+      "bloom": "Analyze",
+      "question": "A manufacturing plant wants to monitor machinery temperatures. The sensors emit data continuously. Management only wants an alert if the average temperature over a rolling 5-minute window exceeds 100 degrees. Which stream processing concept is required to calculate this?",
+      "options": {
+        "A": "A scalar function",
+        "B": "A windowing function (e.g., Tumbling or Hopping window)",
+        "C": "A batch trigger",
+        "D": "A primary key constraint"
+      },
+      "correct_answer": "B",
+      "rationale": "Windowing functions in stream analytics (like Tumbling, Hopping, or Sliding windows) allow you to group and aggregate events over a specific period of time (e.g., a 5-minute rolling average)."
+    },
+    {
+      "id": "D-29",
+      "domain": "Domain 4",
+      "topic": "Describe data visualization in Microsoft Power BI",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "Which Power BI feature allows you to define custom calculations and aggregations using a specialized formula language?",
+      "options": {
+        "A": "T-SQL",
+        "B": "DAX (Data Analysis Expressions)",
+        "C": "Python",
+        "D": "KQL (Kusto Query Language)"
+      },
+      "correct_answer": "B",
+      "rationale": "DAX is the formula expression language used in Power BI for advanced calculations, measures, and calculated columns."
+    },
+    {
+      "id": "D-30",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Easy",
+      "bloom": "Remember",
+      "question": "In data engineering, what does the acronym ETL stand for?",
+      "options": {
+        "A": "Extract, Transform, Load",
+        "B": "Execute, Transfer, Lock",
+        "C": "Enter, Transmit, Leave",
+        "D": "Evaluate, Test, Launch"
+      },
+      "correct_answer": "A",
+      "rationale": "ETL stands for Extract (pulling data), Transform (cleaning/shaping data), and Load (writing data to the destination)."
+    },
+    {
+      "id": "D-31",
+      "domain": "Domain 4",
+      "topic": "Describe common elements of large-scale analytics",
+      "difficulty": "Medium",
+      "bloom": "Understand",
+      "question": "What is a primary benefit of using a Delta Lake architecture (as used in Microsoft Fabric Lakehouses) compared to traditional data lakes?",
+      "options": {
+        "A": "It strictly limits storage to 1 GB.",
+        "B": "It adds ACID transaction logging and time-travel capabilities to files stored in the data lake.",
+        "C": "It removes the ability to use Apache Spark.",
+        "D": "It forces all data to be stored in flat CSV format."
+      },
+      "correct_answer": "B",
+      "rationale": "Delta Lake provides an open-source storage layer that brings ACID transactions, scalable metadata handling, and unified streaming/batch data processing to existing data lakes."
+    }
+  ],
+  "study_notes": [
+    {
+      "id": "A-1",
+      "topic": "Describe ways to represent data",
+      "content": "Data is categorized into three types: Structured (rigid schema, rows/columns, relational DBs), Semi-structured (flexible schema, tags/keys, JSON/XML, Document DBs), and Unstructured (no schema, raw text, images, video, Blob storage). Graph data maps complex relationships (nodes/edges)."
+    },
+    {
+      "id": "A-2",
+      "topic": "Identify options for data storage",
+      "content": "Storage formats include row-based (CSV, Avro - good for serialization/writes) and columnar (Parquet - highly optimized for analytical reads). Database options range from Relational (SQL) to NoSQL stores (Document, Key-Value, Graph)."
+    },
+    {
+      "id": "A-3",
+      "topic": "Describe common data workloads",
+      "content": "OLTP (Online Transaction Processing) handles massive volumes of small, rapid reads/writes for operational systems. OLAP (Online Analytical Processing) handles complex read-heavy queries, batch ingestion, and aggregations for historical business intelligence."
+    },
+    {
+      "id": "A-4",
+      "topic": "Identify roles and responsibilities for data workloads",
+      "content": "Database Administrator (DBA) manages security, backups, and health of databases. Data Engineer builds pipelines (ETL/ELT), transforms data, and manages architecture. Data Analyst builds models, visualizes data, and creates reports (e.g., Power BI)."
+    },
+    {
+      "id": "B-1",
+      "topic": "Describe relational concepts",
+      "content": "Relational DBs use tables with predefined schemas. Primary Keys uniquely identify rows; Foreign Keys establish relationships. Normalization reduces redundancy. SQL comprises DML (SELECT, INSERT, UPDATE, DELETE) for data manipulation and DDL (CREATE, ALTER, DROP) for structure definition."
+    },
+    {
+      "id": "B-2",
+      "topic": "Describe relational Azure data services",
+      "content": "Azure offers PaaS options like Azure SQL Database (fully managed, auto-scaling like Serverless/Hyperscale), SQL Managed Instance (near 100% on-premises compatibility), and open-source DBs (Azure Database for PostgreSQL / MySQL). For full OS access (IaaS), use SQL Server on Azure VMs."
+    },
+    {
+      "id": "C-1",
+      "topic": "Describe capabilities of Azure storage",
+      "content": "Blob Storage is for unstructured objects. Data Lake Storage Gen2 adds a hierarchical namespace to Blob, optimizing it for massive big data analytics (Spark). File Storage provides SMB cloud file shares. Table Storage offers cheap, NoSQL key-value/wide-column storage."
+    },
+    {
+      "id": "C-2",
+      "topic": "Describe capabilities and features of Azure Cosmos DB",
+      "content": "Cosmos DB is a globally distributed, low-latency NoSQL database. It supports multiple APIs: NoSQL (native JSON documents), MongoDB (document), Cassandra (wide-column), Gremlin (graph relationships), and Table (key-value). It uses Partition Keys to scale and offers multiple consistency levels."
+    },
+    {
+      "id": "D-1",
+      "topic": "Describe common elements of large-scale analytics",
+      "content": "Large-scale pipelines use Ingestion -> Processing -> Analytical Store. Microsoft Fabric provides a unified SaaS platform featuring OneLake, Data Factory (orchestration), Lakehouses (Spark/Delta Parquet), and Warehouses (T-SQL). Databricks offers powerful Spark-based analytics."
+    },
+    {
+      "id": "D-2",
+      "topic": "Describe considerations for real-time data analytics",
+      "content": "Batch processing runs on schedules for bounded data. Streaming processing analyzes continuous data continuously. Use Azure Stream Analytics or Fabric Real-Time Intelligence to calculate metrics over time (using Windowing functions) and trigger instant actions."
+    },
+    {
+      "id": "D-3",
+      "topic": "Describe data visualization in Microsoft Power BI",
+      "content": "Power BI turns data into insights via Reports (multi-page visuals) and Dashboards (single-page pinned summaries). Proper Data Modeling (relationships) is critical for performance. Choose visuals wisely: Line charts for trends, Scatter plots for correlations, Pie charts for proportions. DAX is the formula language."
+    }
+  ]
+}
