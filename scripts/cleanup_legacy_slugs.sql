@@ -58,49 +58,81 @@ LIMIT 100;
 -- This converts e.g. "AZ-900" → "az-900", "WBCS Prelims" → "wbcs-prelims",
 -- "iOS_dev.test" → "ios-dev-test".
 --
--- Edge case: if a row's slug is already null or already-correct, the regex
--- predicate skips it.
---
--- DRY-RUN VERSION (just shows what would change):
+-- 2026-04-26 fix: original script only had a dry-run for pyq_bank_v2 and the
+-- UPDATEs were commented out. Now both tables get a dry-run + uncommented
+-- UPDATE. If the auto-normalised slug doesn't match a registered slug in
+-- audit.py / SLUG_LABEL_MAP / IT_TREE / curriculum, you'll need a targeted
+-- UPDATE to map the row to the canonical slug (e.g. "Cloud Practitioner
+-- (CLF-C02)" → "aws-cp" not "cloud-practitioner-clf-c02").
+
+-- DRY-RUN VERSION (pyq_bank_v2 — what would change):
 SELECT
+  'pyq_bank_v2'                                                      AS table_name,
   id,
-  metadata ->> 'exam'                                              AS current_slug,
+  metadata ->> 'exam'                                                AS current_slug,
   TRIM(BOTH '-' FROM regexp_replace(
     LOWER(metadata ->> 'exam'),
     '[^a-z0-9]+', '-', 'g'
-  ))                                                                AS proposed_slug
+  ))                                                                  AS proposed_slug
 FROM pyq_bank_v2
 WHERE metadata ->> 'exam' IS NOT NULL
   AND metadata ->> 'exam' !~ '^[a-z0-9]+(-[a-z0-9]+)*$';
 
--- ACTUAL UPDATE (uncomment to run after reviewing the dry-run):
--- UPDATE pyq_bank_v2
---   SET metadata = jsonb_set(
---     metadata,
---     '{exam}',
---     to_jsonb(
---       TRIM(BOTH '-' FROM regexp_replace(
---         LOWER(metadata ->> 'exam'),
---         '[^a-z0-9]+', '-', 'g'
---       ))
---     )
---   )
--- WHERE metadata ->> 'exam' IS NOT NULL
---   AND metadata ->> 'exam' !~ '^[a-z0-9]+(-[a-z0-9]+)*$';
+-- DRY-RUN VERSION (study_materials — what would change):
+SELECT
+  'study_materials'                                                  AS table_name,
+  id,
+  metadata ->> 'exam'                                                AS current_slug,
+  TRIM(BOTH '-' FROM regexp_replace(
+    LOWER(metadata ->> 'exam'),
+    '[^a-z0-9]+', '-', 'g'
+  ))                                                                  AS proposed_slug
+FROM study_materials
+WHERE metadata ->> 'exam' IS NOT NULL
+  AND metadata ->> 'exam' !~ '^[a-z0-9]+(-[a-z0-9]+)*$';
 
+-- ACTUAL UPDATE — review the dry-run output first. If the proposed_slug
+-- column matches a CANONICAL slug from CANONICAL_SIDEBAR_SLUGS in
+-- tests/test_loader_slug.py, this auto-normalisation is safe to apply.
+-- If not, do a TARGETED UPDATE instead (see notes below).
+
+UPDATE pyq_bank_v2
+  SET metadata = jsonb_set(
+    metadata,
+    '{exam}',
+    to_jsonb(
+      TRIM(BOTH '-' FROM regexp_replace(
+        LOWER(metadata ->> 'exam'),
+        '[^a-z0-9]+', '-', 'g'
+      ))
+    )
+  )
+WHERE metadata ->> 'exam' IS NOT NULL
+  AND metadata ->> 'exam' !~ '^[a-z0-9]+(-[a-z0-9]+)*$';
+
+UPDATE study_materials
+  SET metadata = jsonb_set(
+    metadata,
+    '{exam}',
+    to_jsonb(
+      TRIM(BOTH '-' FROM regexp_replace(
+        LOWER(metadata ->> 'exam'),
+        '[^a-z0-9]+', '-', 'g'
+      ))
+    )
+  )
+WHERE metadata ->> 'exam' IS NOT NULL
+  AND metadata ->> 'exam' !~ '^[a-z0-9]+(-[a-z0-9]+)*$';
+
+-- TARGETED UPDATE example (uncomment + adapt for rows that need a specific
+-- canonical mapping rather than regex normalisation):
+--
 -- UPDATE study_materials
---   SET metadata = jsonb_set(
---     metadata,
---     '{exam}',
---     to_jsonb(
---       TRIM(BOTH '-' FROM regexp_replace(
---         LOWER(metadata ->> 'exam'),
---         '[^a-z0-9]+', '-', 'g'
---       ))
---     )
---   )
--- WHERE metadata ->> 'exam' IS NOT NULL
---   AND metadata ->> 'exam' !~ '^[a-z0-9]+(-[a-z0-9]+)*$';
+--   SET metadata = jsonb_set(metadata, '{exam}', to_jsonb('aws-cp'::text))
+--   WHERE id IN (
+--     '026748eb-b5a0-42cb-8b86-902c2b53f793',
+--     'cce6ac96-9c7e-405f-849d-85f3f3c624bb'
+--   );
 
 
 -- ─── STEP 3 — Verify ─────────────────────────────────────────────────────────

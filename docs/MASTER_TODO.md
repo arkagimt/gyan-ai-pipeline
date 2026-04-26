@@ -169,6 +169,70 @@ dark cyberpunk untouched.
 - [ ] Fix `competitive/page.tsx:87` tab dark-mode regression
 - [ ] Sanity-check IT pages still render their own dark theme correctly
 
+### Wave 12 — Open-Source Roadmap (NEW, 2026-04-26)
+
+Strategic. Triggered by Arka's Gemini consultation about open-sourcing
+Gyan AI. Critical-analysed in chat: most of Gemini's advice is correct
+but missed (a) license decision, (b) LLM API cost as the actual scaling
+bottleneck, (c) DPDPA compliance, (d) "community will fix bugs" survivor
+bias, (e) Indian regulator angle.
+
+**Decision recorded: open-source AFTER pilot, not now.** Reasons:
+  1. We're still in "embarrassed by V1" phase — codebase isn't polished
+     enough to attract contributors
+  2. DPDPA + parental consent + safety pipelines aren't yet hardened
+  3. Open Core + AGPLv3 strategy needs an Enterprise feature to gate
+
+**Locked direction: AGPLv3 + commercial dual-license.**
+  - AGPLv3: copyleft on network use → forks running as a hosted service
+    must publish their changes. Strongest defense against extractive forks.
+  - Commercial dual-license: coaching chains / institutions can pay for
+    a non-AGPL license if they want closed-source modifications.
+  - This pairs with Open Core: students get AGPLv3 free version,
+    institutions pay for Enterprise hosted service.
+
+**Suggested timeline:**
+  - **Now → 6 weeks**: Finish MVP, run pilot with 10-20 students, harden
+    DPDPA + safety pipelines, get teacher feedback
+  - **Week 6**: License decision finalised + architectural hygiene pass
+  - **Week 6-8**: Open the repo with scaffolding files (LICENSE,
+    CONTRIBUTING.md, SECURITY.md, FUNDING.yml, .github/ISSUE_TEMPLATE/),
+    apply to Vercel + Supabase OSS programs immediately
+  - **Week 8+**: Build in public — Twitter thread, LinkedIn architecture
+    write-ups
+
+**Pre-OSS scaffolding TODO (to draft when Arka greenlights):**
+  - [ ] `LICENSE` — full AGPLv3 text + commercial license clarifier note
+  - [ ] `CONTRIBUTING.md` — PR guidelines, code style, agent naming convention
+        (no Sanskrit-name dilution), test requirements
+  - [ ] `SECURITY.md` — vulnerability disclosure process, GitHub Security
+        Advisory link, supported versions, contact email
+  - [ ] `.github/FUNDING.yml` — GitHub Sponsors button, OSS Tier links
+  - [ ] `.github/ISSUE_TEMPLATE/` — bug, feature, content correction templates
+  - [ ] `.github/PULL_REQUEST_TEMPLATE.md` — checklist + Sanjaya reference
+  - [ ] `CODE_OF_CONDUCT.md` — Contributor Covenant 2.1 baseline
+  - [ ] Public `README.md` rewrite — outward-facing, not engineering notes
+  - [ ] Architecture diagram in repo root (the 9-agent pipeline)
+  - [ ] Apply to Vercel for Open Source program
+  - [ ] Apply to Supabase OSS Program
+  - [ ] Set up GitHub Sponsors profile for `arkagimt`
+
+**Hard items Gemini missed that need their own workstreams:**
+  - DPDPA-2023 external counsel engagement (Day 3 in MASTER_TODO — NOT yet
+    started; 2-week lead time; START NOW even if OSS comes later)
+  - LLM API cost mitigation: cache aggressively (already partly done in
+    pipeline), seed-tier strategy (already locked), throttle real-time
+    agents (Sarbagya is admin-only ✓)
+  - Content moderation at scale: UGC flag system → daily review burden;
+    plan moderation tooling + community policy before opening up
+  - Investor optionality: OSS makes raising harder for some VCs; decide
+    OSS-first-fund-later or fund-first-OSS-pieces-later
+
+**Out of scope for Wave 12 (parked):**
+  - Becoming an NGO / Foundation — only after sustained traction
+  - Hiring full-time maintainers — only with grant funding
+  - Multi-language i18n contribution flow — only after >1 outside contributor
+
 ### Wave 11 — Admin QA fixes (2026-04-26 evening)
 
 User QA round on Streamlit admin surfaced 4 issues. All addressed:
