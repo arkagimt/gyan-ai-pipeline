@@ -169,6 +169,47 @@ dark cyberpunk untouched.
 - [ ] Fix `competitive/page.tsx:87` tab dark-mode regression
 - [ ] Sanity-check IT pages still render their own dark theme correctly
 
+### Wave 13 — About page i18n + Sarvam-as-core-engine decision (2026-04-26)
+
+**Decision locked: Sarvam-M is the canonical Indic-language engine for Gyan AI.**
+
+Reasons:
+  - Fine-tuned for 11 Indian languages (Bengali, Hindi, Tamil, Telugu,
+    Marathi, Gujarati, Kannada, Malayalam, Punjabi, Odia, Assamese);
+    significantly better Indic accuracy than Llama-3 / GPT-4
+  - Already registered in Phase 19 LLM router; Bhashacharya already routes
+    Bengali through it
+  - DPDPA alignment — Indian company, Indian data residency
+  - Cost competitive with Groq for Indic content
+  - Strategic moat: "made for India" rather than "ported to India"
+
+Where Sarvam is the canonical engine:
+  - UI string translation across regions (en + bn locked, or/hi/gu queued)
+  - Bhashacharya audits (already wired)
+  - Future student chat (Wave 8 Sarbagya)
+  - Generated content in target language (when curator picks Bengali board)
+  - On-the-fly transliteration for search
+
+About page changes shipped:
+- [x] Region + language switcher at top of /about (4 regions × 5 languages)
+  with `aria-label` + `aria-pressed` + focus-visible rings
+- [x] Manifesto + section headings keyed by `ABOUT_COPY[lang]` dict
+  (en + bn fully translated; or/hi/gu fall back to en until Sarvam-M
+  batch translation pass)
+- [x] Footer "WEST BENGAL" replaced with `region.name.toUpperCase()` so
+  it reflects whatever the user picks
+- [x] Sarvam-M attribution chip near no-ads pledge — locks it as
+  canonical engine publicly
+
+Sanskrit motto + Bengali agent names (সর্বজ্ঞ / চিত্রগুপ্ত / etc.) left
+untouched — those are the brand anchors, never translate.
+
+Wave 13 follow-up (queued):
+- [ ] Sarvam-M batch translation pass for or/hi/gu copy in `ABOUT_COPY`
+- [ ] Same i18n pattern applied to /school /competitive welcome strings
+  (already in languageConfig but verify all paths use the hook)
+- [ ] Add a Sarvam credit badge on the home page footer too
+
 ### Wave 12 — Open-Source Roadmap (NEW, 2026-04-26)
 
 Strategic. Triggered by Arka's Gemini consultation about open-sourcing
